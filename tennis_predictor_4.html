@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACE — Tennis Match Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080c10; --surface:#0d1318; --surface2:#111820; --surface3:#161e28;
+  --border:rgba(255,255,255,0.07); --border-bright:rgba(255,255,255,0.14);
+  --accent:#c8f53a; --accent2:#3af5a0; --accent3:#f5a03a;
+  --text:#e8edf2; --muted:#5a6675; --muted2:#8a97a6; --danger:#f5503a;
+  --player-a:#c8f53a; --player-b:#3ab8f5;
+  --font-display:'Bebas Neue',sans-serif; --font-body:'DM Sans',sans-serif; --font-mono:'DM Mono',monospace;
+  --radius:12px; --radius-sm:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.5;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,245,58,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,245,58,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.page{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:28px 20px 80px}
+
+/* HEADER */
+.header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+.logo{font-family:var(--font-display);font-size:52px;letter-spacing:3px;color:var(--accent);line-height:1}
+.logo span{color:var(--muted);font-size:13px;font-family:var(--font-body);font-weight:400;letter-spacing:3px;display:block;text-transform:uppercase;margin-top:4px}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header-badge{background:rgba(200,245,58,0.1);border:1px solid rgba(200,245,58,0.25);color:var(--accent);font-family:var(--font-mono);font-size:10px;letter-spacing:1px;padding:5px 10px;border-radius:4px;text-transform:uppercase}
+
+/* TOUR TOGGLE */
+.tour-toggle{display:flex;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px}
+.tour-btn{padding:7px 20px;border:none;border-radius:5px;background:transparent;font-family:var(--font-display);font-size:17px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;color:var(--muted)}
+.tour-btn.active{background:var(--surface);color:var(--accent);border:1px solid rgba(200,245,58,0.25);box-shadow:0 0 12px rgba(200,245,58,0.08)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:410px 1fr;gap:20px;align-items:start}
+@media(max-width:960px){.layout{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border-bright),transparent)}
+.card-title{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* INPUTS PANEL */
+.inputs-panel{display:flex;flex-direction:column;gap:14px}
+.section-label{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.player-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.input-group{display:flex;flex-direction:column;gap:4px}
+.input-group label{font-size:11px;color:var(--muted2);font-weight:500}
+input[type="text"],input[type="number"],select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body);font-size:13px;padding:8px 12px;width:100%;transition:border-color 0.2s;outline:none;-webkit-appearance:none}
+input[type="text"]:focus,input[type="number"]:focus,select:focus{border-color:rgba(200,245,58,0.4)}
+select option{background:var(--surface2)}
+input[type="range"]{-webkit-appearance:none;width:100%;height:4px;background:var(--surface2);border-radius:2px;outline:none;cursor:pointer;margin:4px 0}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
+input[type="range"]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--accent);border:none;cursor:pointer}
+
+/* STAT TILES */
+.stat-tiles{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:10px}
+.stat-tile{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:3px}
+.stat-tile-label{font-family:var(--font-mono);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.stat-tile-value{font-family:var(--font-display);font-size:22px;letter-spacing:1px;line-height:1;color:var(--muted);transition:color 0.25s}
+.stat-tile-value.populated{color:var(--text)}
+.stat-tile.player-a .stat-tile-value.populated{color:var(--player-a)}
+.stat-tile.player-b .stat-tile-value.populated{color:var(--player-b)}
+.stat-tile-bar{height:2px;background:var(--border);border-radius:1px;overflow:hidden;margin-top:3px}
+.stat-tile-bar-fill{height:100%;border-radius:1px;width:0%;transition:width 0.5s ease}
+.stat-tile.player-a .stat-tile-bar-fill{background:var(--player-a)}
+.stat-tile.player-b .stat-tile-bar-fill{background:var(--player-b)}
+/* EDIT TOGGLE */
+.edit-toggle{display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;width:fit-content}
+.edit-toggle input[type="checkbox"]{width:11px;height:11px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.edit-toggle-label{font-family:var(--font-mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);user-select:none}
+.stat-edit-row{display:none;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px}
+.stat-edit-row.open{display:grid;animation:fadeUp 0.15s ease}
+.stat-edit-row .input-group label{font-size:10px}
+.toggle-group{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px}
+.toggle-btn{flex:1;padding:6px 10px;border:none;border-radius:5px;background:transparent;color:var(--muted2);font-family:var(--font-body);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.toggle-btn.active{background:var(--surface);color:var(--accent);border:1px solid rgba(200,245,58,0.2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* AUTOCOMPLETE */
+.player-search-wrap{position:relative}
+.player-search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body);font-size:13px;padding:10px 36px 10px 12px;outline:none;transition:all 0.2s}
+.player-search-input:focus{border-color:rgba(200,245,58,0.5);box-shadow:0 0 0 3px rgba(200,245,58,0.06)}
+.player-search-input.selected{border-color:rgba(200,245,58,0.35);background:rgba(200,245,58,0.04)}
+.search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;display:none;padding:2px 4px}
+.search-clear.visible{display:block}
+.autocomplete-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface3);border:1px solid rgba(200,245,58,0.18);border-radius:var(--radius-sm);z-index:1000;max-height:260px;overflow-y:auto;box-shadow:0 20px 48px rgba(0,0,0,0.7);display:none}
+.autocomplete-dropdown.open{display:block;animation:dropIn 0.15s ease}
+@keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.dropdown-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:background 0.12s;border-bottom:1px solid var(--border)}
+.dropdown-item:last-child{border-bottom:none}
+.dropdown-item:hover,.dropdown-item.focused{background:rgba(200,245,58,0.07)}
+.dropdown-item.focused .item-name{color:var(--accent)}
+.item-flag{font-size:17px;flex-shrink:0;line-height:1}
+.item-rank-badge{font-family:var(--font-mono);font-size:9px;background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:2px 6px;border-radius:3px;min-width:30px;text-align:center;flex-shrink:0}
+.item-info{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-size:10px;color:var(--muted);font-family:var(--font-mono)}
+.item-arch{font-family:var(--font-mono);font-size:9px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.no-results{padding:16px;text-align:center;color:var(--muted);font-size:12px}
+.warn-msg{font-family:var(--font-mono);font-size:10px;color:var(--danger);padding:5px 12px;display:none}
+.warn-msg.visible{display:block}
+
+/* SELECTED PLAYER CARD */
+.selected-player-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:none;align-items:flex-start;gap:10px;margin-top:6px}
+.selected-player-card.visible{display:flex;animation:fadeUp 0.2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.spc-flag{font-size:22px;line-height:1;flex-shrink:0;margin-top:2px}
+.spc-info{flex:1;min-width:0}
+.spc-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+.spc-tags{display:flex;gap:5px;flex-wrap:wrap}
+.spc-tag{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);color:var(--muted2);background:var(--surface)}
+.spc-tag.rank{color:var(--accent);border-color:rgba(200,245,58,0.28);background:rgba(200,245,58,0.07)}
+.spc-tag.arch{color:var(--accent2);border-color:rgba(58,245,160,0.22);background:rgba(58,245,160,0.05)}
+.spc-tag.hand{color:var(--muted2)}
+.spc-tag.surface-hard{color:#3ab8f5;border-color:rgba(58,184,245,0.22);background:rgba(58,184,245,0.05)}
+.spc-tag.surface-clay{color:#f5a03a;border-color:rgba(245,160,58,0.22);background:rgba(245,160,58,0.05)}
+.spc-tag.surface-grass{color:#3af5a0;border-color:rgba(58,245,160,0.22);background:rgba(58,245,160,0.05)}
+.spc-tag.surface-balanced{color:var(--muted2)}
+
+/* FORM BUTTONS */
+.form-select-row{display:flex;gap:4px}
+.form-btn{flex:1;padding:6px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--muted2);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;text-align:center}
+.form-btn.win{background:rgba(200,245,58,0.1);color:var(--accent);border-color:rgba(200,245,58,0.22)}
+.form-btn.loss{background:rgba(245,80,58,0.08);color:var(--danger);border-color:rgba(245,80,58,0.18)}
+
+
+/* PREDICT BTN */
+.predict-btn{width:100%;padding:15px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--radius);font-family:var(--font-display);font-size:22px;letter-spacing:3px;cursor:pointer;transition:all 0.2s}
+.predict-btn:hover{background:#d8ff50;transform:translateY(-1px)}
+.predict-btn:active{transform:translateY(0)}
+.data-note{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center;padding:6px 0 2px;opacity:0.7}
+
+/* RESULTS */
+.results-panel{display:flex;flex-direction:column;gap:14px}
+.empty-state{border:1px dashed var(--border);border-radius:var(--radius);padding:60px 20px;text-align:center;color:var(--muted)}
+.empty-icon{font-size:44px;margin-bottom:12px;opacity:0.35}
+
+/* WINNER CARD */
+.winner-card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:var(--radius);padding:22px;position:relative;overflow:hidden}
+.winner-card::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(200,245,58,0.055) 0%,transparent 60%);pointer-events:none}
+.vs-row{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin-bottom:20px}
+.player-block{text-align:center;transition:opacity 0.4s}
+.player-block.loser{opacity:0.35}
+.player-name-big{font-family:var(--font-display);font-size:26px;letter-spacing:2px;line-height:1.1;margin-bottom:2px}
+.player-flag-big{font-size:20px;margin-bottom:4px}
+.player-elo-tag{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:4px}
+.vs-divider{font-family:var(--font-display);font-size:20px;color:var(--muted);letter-spacing:3px}
+.prob-bar-labels{display:flex;justify-content:space-between;margin-bottom:6px}
+.prob-label{font-family:var(--font-mono);font-size:12px;font-weight:500}
+.prob-label.a{color:var(--player-a)}.prob-label.b{color:var(--player-b)}
+.prob-bar-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;display:flex}
+.prob-bar-fill{height:100%;border-radius:4px 0 0 4px;background:linear-gradient(90deg,var(--player-a),rgba(200,245,58,0.7));transition:width 0.9s cubic-bezier(0.34,1.56,0.64,1)}
+.prob-bar-fill-b{flex:1;height:100%;background:linear-gradient(90deg,rgba(58,184,245,0.7),var(--player-b))}
+.confidence-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.conf-high{background:rgba(200,245,58,0.1);color:var(--accent);border:1px solid rgba(200,245,58,0.22)}
+.conf-med{background:rgba(245,160,58,0.1);color:var(--accent3);border:1px solid rgba(245,160,58,0.22)}
+.conf-low{background:rgba(245,80,58,0.08);color:var(--danger);border:1px solid rgba(245,80,58,0.18)}
+.conf-dot{width:6px;height:6px;border-radius:50%}
+.conf-high .conf-dot{background:var(--accent)}.conf-med .conf-dot{background:var(--accent3)}.conf-low .conf-dot{background:var(--danger)}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+
+
+/* SCORE GRID */
+.score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
+.score-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;text-align:center;position:relative;overflow:hidden;transition:border-color 0.2s}
+.score-card.top-pick{border-color:rgba(200,245,58,0.32);background:rgba(200,245,58,0.04)}
+.score-card.top-pick::before{content:'★';position:absolute;top:4px;right:6px;font-size:9px;color:var(--accent)}
+.score-label{font-family:var(--font-display);font-size:22px;letter-spacing:2px;line-height:1;margin-bottom:5px}
+.score-prob{font-family:var(--font-mono);font-size:11px;color:var(--muted2);margin-bottom:5px}
+.score-prob-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.score-prob-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.score-card.winner-score .score-prob-fill{background:var(--player-a)}
+.score-card:not(.winner-score) .score-prob-fill{background:var(--player-b);opacity:0.7}
+
+
+/* MATCH LENGTH */
+.length-bars{display:flex;gap:8px;align-items:flex-end;height:68px}
+.length-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.length-bar-fill{width:100%;background:rgba(200,245,58,0.18);border-radius:3px 3px 0 0;border:1px solid rgba(200,245,58,0.12);transition:height 0.8s ease;min-height:2px}
+.length-bar-fill.dominant{background:rgba(200,245,58,0.45);border-color:rgba(200,245,58,0.35)}
+.length-bar-label{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center}
+.length-bar-pct{font-family:var(--font-mono);font-size:10px;color:var(--muted2)}
+
+/* STATS COMPARE */
+.stats-compare{display:flex;flex-direction:column;gap:10px}
+.stat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.stat-name{font-size:11px;color:var(--muted2);font-weight:500}
+.stat-vals{display:flex;gap:8px;font-family:var(--font-mono);font-size:11px}
+.stat-val-a{color:var(--player-a)}.stat-val-b{color:var(--player-b)}
+.stat-dual-bar{height:4px;background:var(--surface2);border-radius:2px;display:flex;overflow:hidden}
+.stat-fill-a{height:100%;background:var(--player-a);border-radius:2px 0 0 2px;transition:width 0.8s ease;opacity:0.85}
+.stat-fill-b{height:100%;background:var(--player-b);flex:1;border-radius:0 2px 2px 0;opacity:0.7}
+
+/* RADAR */
+.radar-wrap{display:flex;justify-content:center;padding:6px 0}
+
+/* FACTORS */
+.factors-list{display:flex;flex-direction:column;gap:7px}
+.factor-row{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border)}
+.factor-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.factor-text{font-size:12px;color:var(--muted2);line-height:1.4}
+.factor-text strong{color:var(--text);font-weight:600}
+
+/* STYLE TAGS */
+.style-tags{display:flex;flex-wrap:wrap;gap:7px}
+.style-tag{padding:5px 12px;border-radius:20px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.5px;border:1px solid var(--border);color:var(--muted2);background:var(--surface2)}
+.style-tag.highlight{color:var(--accent2);border-color:rgba(58,245,160,0.22);background:rgba(58,245,160,0.05)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
+mark{background:rgba(200,245,58,0.22);color:var(--accent);border-radius:2px;padding:0 1px}
+</style>
+</head>
+<body>
+<div class="page">
+<header class="header">
+  <div class="logo">ACE <span>Tennis Analytics Engine · v3.0</span></div>
+  <div class="header-right">
+    <div class="tour-toggle" id="tourToggle">
+      <button class="tour-btn active" data-val="ATP" onclick="setTour(this)">ATP</button>
+      <button class="tour-btn" data-val="WTA" onclick="setTour(this)">WTA</button>
+    </div>
+    <div class="header-badge">Portfolio · Analytics</div>
+  </div>
+</header>
+
+<div class="layout">
+<!-- ═══════════════ INPUTS PANEL ═══════════════ -->
+<div class="inputs-panel">
+
+  <!-- Match Setup -->
+  <div class="card">
+    <div class="card-title">Match Setup</div>
+    <div class="input-group" style="margin-bottom:10px">
+      <label>Surface</label>
+      <div class="toggle-group" id="surfaceToggle">
+        <button class="toggle-btn active" data-val="hard" onclick="setToggle('surfaceToggle',this)">Hard</button>
+        <button class="toggle-btn" data-val="clay" onclick="setToggle('surfaceToggle',this)">Clay</button>
+        <button class="toggle-btn" data-val="grass" onclick="setToggle('surfaceToggle',this)">Grass</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="input-group">
+        <label>Format</label>
+        <div class="toggle-group" id="formatToggle">
+          <button class="toggle-btn active" data-val="3" onclick="setToggle('formatToggle',this)">Best of 3</button>
+          <button class="toggle-btn" data-val="5" onclick="setToggle('formatToggle',this)">Best of 5</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Environment</label>
+        <div class="toggle-group" id="envToggle">
+          <button class="toggle-btn active" data-val="outdoor" onclick="setToggle('envToggle',this)">Outdoor</button>
+          <button class="toggle-btn" data-val="indoor" onclick="setToggle('envToggle',this)">Indoor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player A -->
+  <div class="card" id="cardA" style="border-color:rgba(200,245,58,0.18)">
+    <div class="card-title" style="color:var(--player-a)">Player A</div>
+    <div class="input-group" style="margin-bottom:8px">
+      <label>Search Player</label>
+      <div class="player-search-wrap">
+        <input class="player-search-input" id="searchA" type="text" placeholder="Name, ranking (#3), or archetype..." autocomplete="off"
+          oninput="handleSearch('A',this.value)" onkeydown="handleKey(event,'A')" onfocus="openDropdown('A')">
+        <button class="search-clear" id="clearA" onclick="clearPlayer('A')">✕</button>
+        <div class="autocomplete-dropdown" id="dropdownA"></div>
+      </div>
+      <div class="warn-msg" id="warnA">⚠ Player already selected as Player B</div>
+      <div class="selected-player-card" id="spcA">
+        <div class="spc-flag" id="spcA_flag"></div>
+        <div class="spc-info">
+          <div class="spc-name" id="spcA_name"></div>
+          <div class="spc-tags">
+            <span class="spc-tag rank" id="spcA_rank"></span>
+            <span class="spc-tag arch" id="spcA_arch"></span>
+            <span class="spc-tag hand" id="spcA_hand"></span>
+            <span class="spc-tag" id="spcA_surf"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="player-grid" style="margin-top:4px">
+      <div class="input-group"><label>Overall Elo</label><input type="number" id="a_elo" placeholder="—" min="1400" max="2500"></div>
+      <div class="input-group"><label>Ranking</label><input type="number" id="a_rank" placeholder="—" min="1" max="500"></div>
+      <div class="input-group"><label>Hard Elo</label><input type="number" id="a_hard_elo" placeholder="—"></div>
+      <div class="input-group"><label>Clay Elo</label><input type="number" id="a_clay_elo" placeholder="—"></div>
+      <div class="input-group"><label>Grass Elo</label><input type="number" id="a_grass_elo" placeholder="—"></div>
+      <div class="input-group"><label>Days Rest</label><input type="number" id="a_rest" placeholder="—" min="0" max="30"></div>
+    </div>
+    <div class="input-group" style="margin-top:8px;margin-bottom:8px">
+      <label>Prev. Match Duration (min)</label>
+      <input type="number" id="a_duration" placeholder="—" min="0" max="360">
+    </div>
+    <!-- Hidden inputs — read by the model, written by selectPlayerByIndex -->
+    <input type="hidden" id="a_hold" value="75">
+    <input type="hidden" id="a_break" value="25">
+    <input type="hidden" id="a_return" value="38">
+    <input type="hidden" id="a_tb" value="55">
+    <!-- Stat tiles -->
+    <div class="stat-tiles" id="a_stat_tiles">
+      <div class="stat-tile player-a">
+        <div class="stat-tile-label">Hold</div>
+        <div class="stat-tile-value" id="a_hold_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="a_hold_bar"></div></div>
+      </div>
+      <div class="stat-tile player-a">
+        <div class="stat-tile-label">Break</div>
+        <div class="stat-tile-value" id="a_break_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="a_break_bar"></div></div>
+      </div>
+      <div class="stat-tile player-a">
+        <div class="stat-tile-label">Return</div>
+        <div class="stat-tile-value" id="a_return_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="a_return_bar"></div></div>
+      </div>
+      <div class="stat-tile player-a">
+        <div class="stat-tile-label">Tiebreak</div>
+        <div class="stat-tile-value" id="a_tb_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="a_tb_bar"></div></div>
+      </div>
+    </div>
+    <!-- Advanced edit toggle -->
+    <label class="edit-toggle">
+      <input type="checkbox" onchange="toggleEditStats('a',this.checked)">
+      <span class="edit-toggle-label">Edit advanced stats</span>
+    </label>
+    <div class="stat-edit-row" id="a_edit_row">
+      <div class="input-group"><label>Hold %</label><input type="number" id="a_hold_edit" value="75" min="40" max="100" oninput="syncStatEdit('a','hold',this.value)"></div>
+      <div class="input-group"><label>Break %</label><input type="number" id="a_break_edit" value="25" min="5" max="65" oninput="syncStatEdit('a','break',this.value)"></div>
+      <div class="input-group"><label>Return %</label><input type="number" id="a_return_edit" value="38" min="15" max="75" oninput="syncStatEdit('a','return',this.value)"></div>
+      <div class="input-group"><label>TB %</label><input type="number" id="a_tb_edit" value="55" min="15" max="90" oninput="syncStatEdit('a','tb',this.value)"></div>
+    </div>
+    <div style="margin-top:10px">
+      <div class="section-label">Last 5 Matches</div>
+      <div class="form-select-row" id="a_form">
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+        <button class="form-btn loss" data-v="L" onclick="toggleForm(this)">L</button>
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player B -->
+  <div class="card" id="cardB" style="border-color:rgba(58,184,245,0.18)">
+    <div class="card-title" style="color:var(--player-b)">Player B</div>
+    <div class="input-group" style="margin-bottom:8px">
+      <label>Search Player</label>
+      <div class="player-search-wrap">
+        <input class="player-search-input" id="searchB" type="text" placeholder="Name, ranking (#3), or archetype..." autocomplete="off"
+          oninput="handleSearch('B',this.value)" onkeydown="handleKey(event,'B')" onfocus="openDropdown('B')">
+        <button class="search-clear" id="clearB" onclick="clearPlayer('B')">✕</button>
+        <div class="autocomplete-dropdown" id="dropdownB"></div>
+      </div>
+      <div class="warn-msg" id="warnB">⚠ Player already selected as Player A</div>
+      <div class="selected-player-card" id="spcB">
+        <div class="spc-flag" id="spcB_flag"></div>
+        <div class="spc-info">
+          <div class="spc-name" id="spcB_name"></div>
+          <div class="spc-tags">
+            <span class="spc-tag rank" id="spcB_rank"></span>
+            <span class="spc-tag arch" id="spcB_arch"></span>
+            <span class="spc-tag hand" id="spcB_hand"></span>
+            <span class="spc-tag" id="spcB_surf"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="player-grid" style="margin-top:4px">
+      <div class="input-group"><label>Overall Elo</label><input type="number" id="b_elo" placeholder="—" min="1400" max="2500"></div>
+      <div class="input-group"><label>Ranking</label><input type="number" id="b_rank" placeholder="—" min="1" max="500"></div>
+      <div class="input-group"><label>Hard Elo</label><input type="number" id="b_hard_elo" placeholder="—"></div>
+      <div class="input-group"><label>Clay Elo</label><input type="number" id="b_clay_elo" placeholder="—"></div>
+      <div class="input-group"><label>Grass Elo</label><input type="number" id="b_grass_elo" placeholder="—"></div>
+      <div class="input-group"><label>Days Rest</label><input type="number" id="b_rest" placeholder="—" min="0" max="30"></div>
+    </div>
+    <div class="input-group" style="margin-top:8px;margin-bottom:8px">
+      <label>Prev. Match Duration (min)</label>
+      <input type="number" id="b_duration" placeholder="—" min="0" max="360">
+    </div>
+    <!-- Hidden inputs — read by the model, written by selectPlayerByIndex -->
+    <input type="hidden" id="b_hold" value="75">
+    <input type="hidden" id="b_break" value="25">
+    <input type="hidden" id="b_return" value="38">
+    <input type="hidden" id="b_tb" value="55">
+    <!-- Stat tiles -->
+    <div class="stat-tiles" id="b_stat_tiles">
+      <div class="stat-tile player-b">
+        <div class="stat-tile-label">Hold</div>
+        <div class="stat-tile-value" id="b_hold_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="b_hold_bar"></div></div>
+      </div>
+      <div class="stat-tile player-b">
+        <div class="stat-tile-label">Break</div>
+        <div class="stat-tile-value" id="b_break_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="b_break_bar"></div></div>
+      </div>
+      <div class="stat-tile player-b">
+        <div class="stat-tile-label">Return</div>
+        <div class="stat-tile-value" id="b_return_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="b_return_bar"></div></div>
+      </div>
+      <div class="stat-tile player-b">
+        <div class="stat-tile-label">Tiebreak</div>
+        <div class="stat-tile-value" id="b_tb_disp">—</div>
+        <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="b_tb_bar"></div></div>
+      </div>
+    </div>
+    <!-- Advanced edit toggle -->
+    <label class="edit-toggle">
+      <input type="checkbox" onchange="toggleEditStats('b',this.checked)">
+      <span class="edit-toggle-label">Edit advanced stats</span>
+    </label>
+    <div class="stat-edit-row" id="b_edit_row">
+      <div class="input-group"><label>Hold %</label><input type="number" id="b_hold_edit" value="75" min="40" max="100" oninput="syncStatEdit('b','hold',this.value)"></div>
+      <div class="input-group"><label>Break %</label><input type="number" id="b_break_edit" value="25" min="5" max="65" oninput="syncStatEdit('b','break',this.value)"></div>
+      <div class="input-group"><label>Return %</label><input type="number" id="b_return_edit" value="38" min="15" max="75" oninput="syncStatEdit('b','return',this.value)"></div>
+      <div class="input-group"><label>TB %</label><input type="number" id="b_tb_edit" value="55" min="15" max="90" oninput="syncStatEdit('b','tb',this.value)"></div>
+    </div>
+    <div style="margin-top:10px">
+      <div class="section-label">Last 5 Matches</div>
+      <div class="form-select-row" id="b_form">
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+        <button class="form-btn loss" data-v="L" onclick="toggleForm(this)">L</button>
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+        <button class="form-btn win"  data-v="W" onclick="toggleForm(this)">W</button>
+      </div>
+    </div>
+  </div>
+
+
+  <button class="predict-btn" onclick="predict()">ANALYSE MATCH</button>
+  <div class="data-note">⚠ Player data uses sample/estimated values — replaceable with live ATP/WTA feeds</div>
+</div>
+
+<!-- ═══════════════ RESULTS PANEL ═══════════════ -->
+<div class="results-panel">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">🎾</div>
+    <p style="font-size:13px">Select two players and click <strong>Analyse Match</strong><br>to generate a full analytical prediction</p>
+  </div>
+  <div id="resultCards" style="display:none;flex-direction:column;gap:14px">
+
+    <!-- Win probability -->
+    <div class="winner-card">
+      <div class="card-title">Match Prediction</div>
+      <div class="vs-row">
+        <div class="player-block" id="block_a">
+          <div class="player-flag-big" id="res_a_flag"></div>
+          <div class="player-name-big" id="res_a_name" style="color:var(--player-a)">—</div>
+          <div class="player-elo-tag" id="res_a_elo">—</div>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="player-block" id="block_b">
+          <div class="player-flag-big" id="res_b_flag"></div>
+          <div class="player-name-big" id="res_b_name" style="color:var(--player-b)">—</div>
+          <div class="player-elo-tag" id="res_b_elo">—</div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="prob-bar-labels">
+          <span class="prob-label a" id="res_a_prob">—%</span>
+          <span class="prob-label b" id="res_b_prob">—%</span>
+        </div>
+        <div class="prob-bar-track">
+          <div class="prob-bar-fill" id="prob_bar_a" style="width:50%"></div>
+          <div class="prob-bar-fill-b"></div>
+        </div>
+      </div>
+      <div class="flex-between">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:3px">PREDICTED WINNER</div>
+          <div style="font-family:var(--font-display);font-size:26px;letter-spacing:2px" id="res_winner">—</div>
+        </div>
+        <div id="res_conf" class="confidence-pill conf-med"><span class="conf-dot"></span><span>Medium Confidence</span></div>
+      </div>
+    </div>
+
+
+
+    <!-- Set Score Distribution -->
+    <div class="card">
+      <div class="card-title">Set Score Distribution</div>
+      <div class="score-grid" id="scoreGrid"></div>
+    </div>
+
+    <!-- Match Length -->
+    <div class="card">
+      <div class="card-title">Match Length Probability</div>
+      <div class="length-bars" id="lengthBars"></div>
+    </div>
+
+    <!-- Stats Comparison -->
+    <div class="card">
+      <div class="card-title">Serve &amp; Return Comparison</div>
+      <div class="stats-compare" id="statsCompare"></div>
+    </div>
+
+    <!-- Radar -->
+    <div class="card">
+      <div class="card-title">Player Profile Radar</div>
+      <div class="radar-wrap"><canvas id="radarCanvas" width="340" height="280"></canvas></div>
+    </div>
+
+    <!-- Why The Model Leaned This Way -->
+    <div class="card">
+      <div class="card-title">Why The Model Leaned This Way</div>
+      <div class="factors-list" id="factorsList"></div>
+    </div>
+
+    <!-- Match Style -->
+    <div class="card">
+      <div class="card-title">Match Style Projection</div>
+      <div class="style-tags" id="styleTags"></div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /layout -->
+</div><!-- /page -->
+<script>
+/* ══════════════════════════════════════════════════════════════
+   ATP DATABASE — Top 150 players (sample/estimated values)
+   Fields: name, flag, ranking, elo, hard_elo, clay_elo, grass_elo,
+           hold, break, returnPct, tiebreak, handedness, archetype,
+           form[5], rest, duration
+══════════════════════════════════════════════════════════════ */
+const ATP_PLAYERS = [
+  {name:"Jannik Sinner",flag:"🇮🇹",ranking:1,elo:2158,hard_elo:2185,clay_elo:2095,grass_elo:2110,hold:83,break:29,returnPct:43,tiebreak:62,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","W","W"],rest:2,duration:88,h2h:{"Carlos Alcaraz":6,"Novak Djokovic":5,"Daniil Medvedev":8,"Alexander Zverev":5}},
+  {name:"Carlos Alcaraz",flag:"🇪🇸",ranking:2,elo:2108,hard_elo:2118,clay_elo:2145,grass_elo:2138,hold:80,break:32,returnPct:44,tiebreak:59,handedness:"Right",archetype:"Complete All-Courter",form:["W","L","W","W","W"],rest:2,duration:112,h2h:{"Jannik Sinner":5,"Novak Djokovic":6,"Rafael Nadal":2}},
+  {name:"Alexander Zverev",flag:"🇩🇪",ranking:3,elo:2088,hard_elo:2102,clay_elo:2096,grass_elo:2012,hold:80,break:26,returnPct:39,tiebreak:58,handedness:"Right",archetype:"All-Court Powerhouse",form:["W","W","L","W","W"],rest:1,duration:105},
+  {name:"Novak Djokovic",flag:"🇷🇸",ranking:4,elo:2142,hard_elo:2148,clay_elo:2132,grass_elo:2152,hold:82,break:33,returnPct:46,tiebreak:65,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:3,duration:145,h2h:{"Carlos Alcaraz":3,"Jannik Sinner":4,"Casper Ruud":11,"Daniil Medvedev":9}},
+  {name:"Felix Auger-Aliassime",flag:"🇨🇦",ranking:5,elo:2005,hard_elo:2020,clay_elo:1918,grass_elo:2008,hold:81,break:24,returnPct:36,tiebreak:60,handedness:"Right",archetype:"Big Server",form:["W","W","W","L","W"],rest:2,duration:95},
+  {name:"Ben Shelton",flag:"🇺🇸",ranking:6,elo:2010,hard_elo:2032,clay_elo:1895,grass_elo:1978,hold:83,break:24,returnPct:34,tiebreak:63,handedness:"Left",archetype:"Big Server",form:["W","W","W","L","W"],rest:1,duration:85},
+  {name:"Daniil Medvedev",flag:"🇷🇺",ranking:7,elo:2072,hard_elo:2105,clay_elo:1972,grass_elo:1982,hold:80,break:28,returnPct:42,tiebreak:61,handedness:"Right",archetype:"Counter-Puncher",form:["W","L","W","W","L"],rest:2,duration:118},
+  {name:"Taylor Fritz",flag:"🇺🇸",ranking:8,elo:2022,hard_elo:2042,clay_elo:1942,grass_elo:2012,hold:82,break:23,returnPct:36,tiebreak:64,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","W"],rest:2,duration:98},
+  {name:"Alex De Minaur",flag:"🇦🇺",ranking:9,elo:1998,hard_elo:2010,clay_elo:1935,grass_elo:1968,hold:76,break:28,returnPct:42,tiebreak:54,handedness:"Right",archetype:"Defensive Retriever",form:["W","W","L","W","W"],rest:2,duration:120},
+  {name:"Alexander Bublik",flag:"🇰🇿",ranking:10,elo:1978,hard_elo:1992,clay_elo:1905,grass_elo:1988,hold:82,break:22,returnPct:33,tiebreak:62,handedness:"Right",archetype:"Big Server",form:["W","L","W","W","W"],rest:1,duration:95},
+  {name:"Lorenzo Musetti",flag:"🇮🇹",ranking:11,elo:1965,hard_elo:1948,clay_elo:2002,grass_elo:1972,hold:77,break:27,returnPct:39,tiebreak:52,handedness:"Left",archetype:"Creative All-Courter",form:["W","W","L","W","W"],rest:2,duration:105},
+  {name:"Flavio Cobolli",flag:"🇮🇹",ranking:12,elo:1952,hard_elo:1958,clay_elo:1955,grass_elo:1912,hold:76,break:25,returnPct:37,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Andrey Rublev",flag:"🇷🇺",ranking:13,elo:1998,hard_elo:2012,clay_elo:1992,grass_elo:1932,hold:78,break:27,returnPct:40,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:102},
+  {name:"Jiri Lehecka",flag:"🇨🇿",ranking:14,elo:1958,hard_elo:1968,clay_elo:1888,grass_elo:1950,hold:79,break:23,returnPct:35,tiebreak:56,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:1,duration:92},
+  {name:"Karen Khachanov",flag:"🇷🇺",ranking:15,elo:1945,hard_elo:1960,clay_elo:1895,grass_elo:1912,hold:79,break:24,returnPct:36,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","W","W"],rest:2,duration:108},
+  {name:"Luciano Darderi",flag:"🇮🇹",ranking:16,elo:1932,hard_elo:1920,clay_elo:1965,grass_elo:1878,hold:76,break:26,returnPct:38,tiebreak:50,handedness:"Right",archetype:"Clay Specialist",form:["W","W","W","L","W"],rest:1,duration:105},
+  {name:"Casper Ruud",flag:"🇳🇴",ranking:17,elo:1988,hard_elo:1948,clay_elo:2055,grass_elo:1895,hold:77,break:29,returnPct:41,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","W","W"],rest:1,duration:112},
+  {name:"Valentin Vacherot",flag:"🇲🇨",ranking:18,elo:1895,hard_elo:1882,clay_elo:1928,grass_elo:1858,hold:74,break:26,returnPct:38,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["W","L","W","W","W"],rest:1,duration:110},
+  {name:"Arthur Fils",flag:"🇫🇷",ranking:19,elo:1928,hard_elo:1935,clay_elo:1925,grass_elo:1892,hold:78,break:25,returnPct:37,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","W","W"],rest:2,duration:102},
+  {name:"Learner Tien",flag:"🇺🇸",ranking:20,elo:1898,hard_elo:1912,clay_elo:1862,grass_elo:1878,hold:77,break:23,returnPct:35,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:1,duration:95},
+  {name:"Frances Tiafoe",flag:"🇺🇸",ranking:21,elo:1962,hard_elo:1978,clay_elo:1892,grass_elo:1952,hold:77,break:26,returnPct:39,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","L"],rest:2,duration:98},
+  {name:"Cameron Norrie",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:22,elo:1908,hard_elo:1902,clay_elo:1912,grass_elo:1922,hold:76,break:26,returnPct:39,tiebreak:50,handedness:"Left",archetype:"Defensive Retriever",form:["W","W","L","L","W"],rest:2,duration:130},
+  {name:"Alejandro Davidovich Fokina",flag:"🇪🇸",ranking:23,elo:1878,hard_elo:1862,clay_elo:1918,grass_elo:1845,hold:75,break:26,returnPct:38,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","L","W","W","W"],rest:1,duration:115},
+  {name:"Arthur Rinderknech",flag:"🇫🇷",ranking:24,elo:1882,hard_elo:1892,clay_elo:1872,grass_elo:1875,hold:80,break:22,returnPct:33,tiebreak:56,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","L"],rest:2,duration:92},
+  {name:"Tomas Martin Etcheverry",flag:"🇦🇷",ranking:25,elo:1878,hard_elo:1855,clay_elo:1928,grass_elo:1825,hold:75,break:28,returnPct:40,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","W","W"],rest:1,duration:118},
+  {name:"Tommy Paul",flag:"🇺🇸",ranking:26,elo:1952,hard_elo:1972,clay_elo:1892,grass_elo:1935,hold:78,break:25,returnPct:38,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:2,duration:92},
+  {name:"Francisco Cerundolo",flag:"🇦🇷",ranking:27,elo:1925,hard_elo:1905,clay_elo:1968,grass_elo:1865,hold:76,break:28,returnPct:40,tiebreak:50,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:1,duration:115},
+  {name:"Jakub Mensik",flag:"🇨🇿",ranking:28,elo:1892,hard_elo:1905,clay_elo:1862,grass_elo:1882,hold:79,break:23,returnPct:35,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:88},
+  {name:"Rafael Jodar",flag:"🇪🇸",ranking:29,elo:1855,hard_elo:1842,clay_elo:1888,grass_elo:1825,hold:74,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","W","L","W"],rest:2,duration:108},
+  {name:"Joao Fonseca",flag:"🇧🇷",ranking:30,elo:1875,hard_elo:1878,clay_elo:1865,grass_elo:1852,hold:76,break:22,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:1,duration:95},
+  {name:"Tallon Griekspoor",flag:"🇳🇱",ranking:31,elo:1902,hard_elo:1922,clay_elo:1852,grass_elo:1932,hold:80,break:23,returnPct:34,tiebreak:55,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Corentin Moutet",flag:"🇫🇷",ranking:32,elo:1862,hard_elo:1872,clay_elo:1872,grass_elo:1877,hold:73,break:27,returnPct:40,tiebreak:50,handedness:"Left",archetype:"Creative All-Courter",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Brandon Nakashima",flag:"🇺🇸",ranking:33,elo:1848,hard_elo:1863,clay_elo:1838,grass_elo:1843,hold:76,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Ugo Humbert",flag:"🇫🇷",ranking:34,elo:1942,hard_elo:1957,clay_elo:1932,grass_elo:1937,hold:79,break:26,returnPct:38,tiebreak:57,handedness:"Left",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Alejandro Tabilo",flag:"🇨🇱",ranking:35,elo:1875,hard_elo:1890,clay_elo:1865,grass_elo:1870,hold:78,break:25,returnPct:37,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Alexander Blockx",flag:"🇧🇪",ranking:36,elo:1845,hard_elo:1860,clay_elo:1835,grass_elo:1840,hold:77,break:23,returnPct:35,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Denis Shapovalov",flag:"🇨🇦",ranking:37,elo:1862,hard_elo:1877,clay_elo:1852,grass_elo:1857,hold:78,break:25,returnPct:38,tiebreak:57,handedness:"Left",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Zizou Bergs",flag:"🇧🇪",ranking:38,elo:1835,hard_elo:1850,clay_elo:1825,grass_elo:1830,hold:76,break:23,returnPct:35,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Jaume Munar",flag:"🇪🇸",ranking:39,elo:1838,hard_elo:1808,clay_elo:1878,grass_elo:1788,hold:75,break:26,returnPct:38,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Tomas Machac",flag:"🇨🇿",ranking:40,elo:1855,hard_elo:1870,clay_elo:1845,grass_elo:1850,hold:79,break:23,returnPct:35,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Alex Michelsen",flag:"🇺🇸",ranking:41,elo:1842,hard_elo:1857,clay_elo:1832,grass_elo:1837,hold:78,break:23,returnPct:35,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Mariano Navone",flag:"🇦🇷",ranking:42,elo:1835,hard_elo:1805,clay_elo:1875,grass_elo:1785,hold:75,break:27,returnPct:39,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Holger Rune",flag:"🇩🇰",ranking:43,elo:1948,hard_elo:1948,clay_elo:1968,grass_elo:1938,hold:77,break:28,returnPct:41,tiebreak:53,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Adrian Mannarino",flag:"🇫🇷",ranking:44,elo:1858,hard_elo:1863,clay_elo:1863,grass_elo:1863,hold:75,break:24,returnPct:38,tiebreak:51,handedness:"Left",archetype:"Defensive Retriever",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Marin Cilic",flag:"🇭🇷",ranking:45,elo:1922,hard_elo:1942,clay_elo:1872,grass_elo:1952,hold:81,break:22,returnPct:33,tiebreak:57,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Sebastian Korda",flag:"🇺🇸",ranking:46,elo:1932,hard_elo:1947,clay_elo:1922,grass_elo:1927,hold:77,break:25,returnPct:37,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Miomir Kecmanovic",flag:"🇷🇸",ranking:47,elo:1838,hard_elo:1838,clay_elo:1858,grass_elo:1828,hold:76,break:24,returnPct:37,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Gabriel Diallo",flag:"🇨🇦",ranking:48,elo:1835,hard_elo:1855,clay_elo:1785,grass_elo:1865,hold:82,break:21,returnPct:31,tiebreak:57,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Ethan Quinn",flag:"🇺🇸",ranking:49,elo:1832,hard_elo:1847,clay_elo:1822,grass_elo:1827,hold:77,break:23,returnPct:35,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Nuno Borges",flag:"🇵🇹",ranking:50,elo:1845,hard_elo:1860,clay_elo:1835,grass_elo:1840,hold:77,break:24,returnPct:36,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Terence Atmane",flag:"🇫🇷",ranking:51,elo:1828,hard_elo:1848,clay_elo:1778,grass_elo:1858,hold:80,break:22,returnPct:32,tiebreak:56,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Fabian Marozsan",flag:"🇭🇺",ranking:52,elo:1825,hard_elo:1795,clay_elo:1865,grass_elo:1775,hold:75,break:26,returnPct:38,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Botic Van De Zandschulp",flag:"🇳🇱",ranking:53,elo:1832,hard_elo:1847,clay_elo:1822,grass_elo:1827,hold:76,break:24,returnPct:37,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Juan Manuel Cerundolo",flag:"🇦🇷",ranking:54,elo:1825,hard_elo:1795,clay_elo:1865,grass_elo:1775,hold:75,break:27,returnPct:39,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Yannick Hanfmann",flag:"🇩🇪",ranking:55,elo:1818,hard_elo:1838,clay_elo:1768,grass_elo:1848,hold:79,break:21,returnPct:32,tiebreak:54,handedness:"Right",archetype:"Big Server",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Hamad Medjedovic",flag:"🇷🇸",ranking:56,elo:1822,hard_elo:1837,clay_elo:1812,grass_elo:1817,hold:76,break:23,returnPct:35,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Ignacio Buse",flag:"🇵🇪",ranking:57,elo:1815,hard_elo:1785,clay_elo:1855,grass_elo:1765,hold:74,break:25,returnPct:37,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Thiago Agustin Tirante",flag:"🇦🇷",ranking:58,elo:1818,hard_elo:1788,clay_elo:1858,grass_elo:1768,hold:74,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Marton Fucsovics",flag:"🇭🇺",ranking:59,elo:1812,hard_elo:1827,clay_elo:1802,grass_elo:1807,hold:76,break:23,returnPct:35,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Jenson Brooksby",flag:"🇺🇸",ranking:60,elo:1808,hard_elo:1813,clay_elo:1813,grass_elo:1813,hold:75,break:25,returnPct:39,tiebreak:51,handedness:"Right",archetype:"Defensive Retriever",form:["W","W","L","W","L"],rest:2,duration:100},
+  {name:"Alexei Popyrin",flag:"🇦🇺",ranking:61,elo:1845,hard_elo:1865,clay_elo:1795,grass_elo:1875,hold:80,break:23,returnPct:35,tiebreak:56,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Sebastian Baez",flag:"🇦🇷",ranking:62,elo:1835,hard_elo:1805,clay_elo:1875,grass_elo:1785,hold:75,break:29,returnPct:41,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Vit Kopriva",flag:"🇨🇿",ranking:63,elo:1805,hard_elo:1820,clay_elo:1795,grass_elo:1800,hold:77,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Raphael Collignon",flag:"🇧🇪",ranking:64,elo:1802,hard_elo:1817,clay_elo:1792,grass_elo:1797,hold:76,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Daniel Altmaier",flag:"🇩🇪",ranking:65,elo:1808,hard_elo:1778,clay_elo:1848,grass_elo:1758,hold:75,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Roman Andres Burruchaga",flag:"🇦🇷",ranking:66,elo:1798,hard_elo:1768,clay_elo:1838,grass_elo:1748,hold:74,break:25,returnPct:37,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Martin Landaluce",flag:"🇪🇸",ranking:67,elo:1795,hard_elo:1765,clay_elo:1835,grass_elo:1745,hold:74,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Camilo Ugo Carabelli",flag:"🇦🇷",ranking:68,elo:1792,hard_elo:1762,clay_elo:1832,grass_elo:1742,hold:74,break:26,returnPct:38,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lorenzo Sonego",flag:"🇮🇹",ranking:69,elo:1865,hard_elo:1880,clay_elo:1855,grass_elo:1860,hold:78,break:24,returnPct:36,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Adolfo Daniel Vallejo",flag:"🇵🇾",ranking:70,elo:1788,hard_elo:1758,clay_elo:1828,grass_elo:1738,hold:74,break:24,returnPct:36,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Dino Prizmic",flag:"🇭🇷",ranking:71,elo:1785,hard_elo:1800,clay_elo:1775,grass_elo:1780,hold:76,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Mattia Bellucci",flag:"🇮🇹",ranking:72,elo:1782,hard_elo:1797,clay_elo:1772,grass_elo:1777,hold:77,break:23,returnPct:35,tiebreak:52,handedness:"Left",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Valentin Royer",flag:"🇫🇷",ranking:73,elo:1778,hard_elo:1793,clay_elo:1768,grass_elo:1773,hold:75,break:22,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jack Draper",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:74,elo:1992,hard_elo:2007,clay_elo:1982,grass_elo:1987,hold:78,break:27,returnPct:40,tiebreak:56,handedness:"Left",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Reilly Opelka",flag:"🇺🇸",ranking:75,elo:1855,hard_elo:1875,clay_elo:1805,grass_elo:1885,hold:89,break:19,returnPct:27,tiebreak:63,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Arthur Cazaux",flag:"🇫🇷",ranking:76,elo:1775,hard_elo:1790,clay_elo:1765,grass_elo:1770,hold:75,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kamil Majchrzak",flag:"🇵🇱",ranking:77,elo:1772,hard_elo:1772,clay_elo:1792,grass_elo:1762,hold:75,break:22,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Hubert Hurkacz",flag:"🇵🇱",ranking:78,elo:1942,hard_elo:1962,clay_elo:1892,grass_elo:1972,hold:84,break:24,returnPct:35,tiebreak:66,handedness:"Right",archetype:"Serve-Volley Hybrid",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jan-Lennard Struff",flag:"🇩🇪",ranking:79,elo:1875,hard_elo:1895,clay_elo:1825,grass_elo:1905,hold:81,break:22,returnPct:34,tiebreak:58,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Giovanni Mpetshi Perricard",flag:"🇫🇷",ranking:80,elo:1835,hard_elo:1855,clay_elo:1785,grass_elo:1865,hold:87,break:20,returnPct:29,tiebreak:62,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Marco Trungelliti",flag:"🇦🇷",ranking:81,elo:1762,hard_elo:1762,clay_elo:1782,grass_elo:1752,hold:73,break:23,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Stefanos Tsitsipas",flag:"🇬🇷",ranking:82,elo:1988,hard_elo:2008,clay_elo:1938,grass_elo:2018,hold:79,break:29,returnPct:40,tiebreak:54,handedness:"Right",archetype:"Serve-Volley Hybrid",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"James Duckworth",flag:"🇦🇺",ranking:83,elo:1758,hard_elo:1773,clay_elo:1748,grass_elo:1753,hold:78,break:21,returnPct:32,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Marcos Giron",flag:"🇺🇸",ranking:84,elo:1755,hard_elo:1760,clay_elo:1760,grass_elo:1760,hold:77,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Defensive Retriever",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Zachary Svajda",flag:"🇺🇸",ranking:85,elo:1752,hard_elo:1767,clay_elo:1742,grass_elo:1747,hold:77,break:21,returnPct:32,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Daniel Merida Aguilar",flag:"🇪🇸",ranking:86,elo:1748,hard_elo:1718,clay_elo:1788,grass_elo:1698,hold:74,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Damir Dzumhur",flag:"🇧🇦",ranking:87,elo:1745,hard_elo:1760,clay_elo:1735,grass_elo:1740,hold:75,break:22,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Quentin Halys",flag:"🇫🇷",ranking:88,elo:1745,hard_elo:1765,clay_elo:1695,grass_elo:1775,hold:79,break:21,returnPct:32,tiebreak:54,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Alexander Shevchenko",flag:"🇰🇿",ranking:89,elo:1742,hard_elo:1757,clay_elo:1732,grass_elo:1737,hold:77,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Pablo Carreno Busta",flag:"🇪🇸",ranking:90,elo:1862,hard_elo:1832,clay_elo:1902,grass_elo:1812,hold:77,break:27,returnPct:40,tiebreak:52,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Sebastian Ofner",flag:"🇦🇹",ranking:91,elo:1738,hard_elo:1753,clay_elo:1728,grass_elo:1733,hold:77,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Eliot Spizzirri",flag:"🇺🇸",ranking:92,elo:1735,hard_elo:1750,clay_elo:1725,grass_elo:1730,hold:77,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Yibing Wu",flag:"🇨🇳",ranking:93,elo:1732,hard_elo:1747,clay_elo:1722,grass_elo:1727,hold:78,break:22,returnPct:33,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Aleksandar Kovacevic",flag:"🇺🇸",ranking:94,elo:1728,hard_elo:1743,clay_elo:1718,grass_elo:1723,hold:77,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Patrick Kypson",flag:"🇺🇸",ranking:95,elo:1725,hard_elo:1740,clay_elo:1715,grass_elo:1720,hold:76,break:21,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Matteo Arnaldi",flag:"🇮🇹",ranking:96,elo:1728,hard_elo:1743,clay_elo:1718,grass_elo:1723,hold:77,break:23,returnPct:35,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Emilio Nava",flag:"🇺🇸",ranking:97,elo:1718,hard_elo:1733,clay_elo:1708,grass_elo:1713,hold:75,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Benjamin Bonzi",flag:"🇫🇷",ranking:98,elo:1722,hard_elo:1737,clay_elo:1712,grass_elo:1717,hold:77,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Roberto Bautista Agut",flag:"🇪🇸",ranking:99,elo:1848,hard_elo:1848,clay_elo:1868,grass_elo:1838,hold:77,break:25,returnPct:38,tiebreak:52,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Aleksandar Vukic",flag:"🇦🇺",ranking:100,elo:1715,hard_elo:1730,clay_elo:1705,grass_elo:1710,hold:76,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Adam Walton",flag:"🇦🇺",ranking:101,elo:1712,hard_elo:1727,clay_elo:1702,grass_elo:1707,hold:76,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Rinky Hijikata",flag:"🇦🇺",ranking:102,elo:1708,hard_elo:1723,clay_elo:1698,grass_elo:1703,hold:76,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Luca Van Assche",flag:"🇫🇷",ranking:103,elo:1705,hard_elo:1720,clay_elo:1695,grass_elo:1700,hold:76,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jan Choinski",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:104,elo:1702,hard_elo:1722,clay_elo:1652,grass_elo:1732,hold:79,break:20,returnPct:31,tiebreak:54,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Sho Shimabukuro",flag:"🇯🇵",ranking:105,elo:1698,hard_elo:1698,clay_elo:1718,grass_elo:1688,hold:74,break:20,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Alex Molcan",flag:"🇸🇰",ranking:106,elo:1832,hard_elo:1802,clay_elo:1872,grass_elo:1782,hold:75,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Matteo Berrettini",flag:"🇮🇹",ranking:107,elo:1875,hard_elo:1895,clay_elo:1825,grass_elo:1905,hold:83,break:22,returnPct:33,tiebreak:61,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Alexandre Muller",flag:"🇫🇷",ranking:108,elo:1692,hard_elo:1712,clay_elo:1642,grass_elo:1722,hold:79,break:21,returnPct:32,tiebreak:54,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jesper De Jong",flag:"🇳🇱",ranking:109,elo:1688,hard_elo:1703,clay_elo:1678,grass_elo:1683,hold:75,break:22,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Titouan Droguet",flag:"🇫🇷",ranking:110,elo:1685,hard_elo:1700,clay_elo:1675,grass_elo:1680,hold:75,break:21,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Dalibor Svrcina",flag:"🇨🇿",ranking:111,elo:1682,hard_elo:1697,clay_elo:1672,grass_elo:1677,hold:75,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Martin Damm",flag:"🇺🇸",ranking:112,elo:1678,hard_elo:1693,clay_elo:1668,grass_elo:1673,hold:77,break:22,returnPct:33,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Coleman Wong",flag:"🇭🇰",ranking:113,elo:1675,hard_elo:1690,clay_elo:1665,grass_elo:1670,hold:75,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Francisco Comesana",flag:"🇦🇷",ranking:114,elo:1672,hard_elo:1642,clay_elo:1712,grass_elo:1622,hold:74,break:24,returnPct:36,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Nikoloz Basilashvili",flag:"🇬🇪",ranking:115,elo:1822,hard_elo:1837,clay_elo:1812,grass_elo:1817,hold:77,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Cristian Garin",flag:"🇨🇱",ranking:116,elo:1842,hard_elo:1812,clay_elo:1882,grass_elo:1792,hold:75,break:26,returnPct:38,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jaime Faria",flag:"🇵🇹",ranking:117,elo:1668,hard_elo:1683,clay_elo:1658,grass_elo:1663,hold:75,break:21,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Henrique Rocha",flag:"🇵🇹",ranking:118,elo:1662,hard_elo:1677,clay_elo:1652,grass_elo:1657,hold:74,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Stan Wawrinka",flag:"🇨🇭",ranking:119,elo:1858,hard_elo:1873,clay_elo:1848,grass_elo:1853,hold:79,break:26,returnPct:37,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Hugo Gaston",flag:"🇫🇷",ranking:120,elo:1812,hard_elo:1822,clay_elo:1822,grass_elo:1827,hold:73,break:24,returnPct:35,tiebreak:48,handedness:"Right",archetype:"Creative All-Courter",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Leandro Riedi",flag:"🇨🇭",ranking:121,elo:1655,hard_elo:1670,clay_elo:1645,grass_elo:1650,hold:76,break:21,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jacob Fearnley",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:122,elo:1652,hard_elo:1667,clay_elo:1642,grass_elo:1647,hold:77,break:22,returnPct:33,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Nicolai Budkov Kjaer",flag:"🇳🇴",ranking:123,elo:1648,hard_elo:1663,clay_elo:1638,grass_elo:1643,hold:75,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Pablo Llamas Ruiz",flag:"🇪🇸",ranking:124,elo:1645,hard_elo:1615,clay_elo:1685,grass_elo:1595,hold:74,break:24,returnPct:36,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Tristan Schoolkate",flag:"🇦🇺",ranking:125,elo:1642,hard_elo:1657,clay_elo:1632,grass_elo:1637,hold:75,break:20,returnPct:31,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Andrea Pellegrino",flag:"🇮🇹",ranking:126,elo:1638,hard_elo:1608,clay_elo:1678,grass_elo:1588,hold:74,break:23,returnPct:35,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Mackenzie McDonald",flag:"🇺🇸",ranking:127,elo:1835,hard_elo:1850,clay_elo:1825,grass_elo:1830,hold:76,break:22,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Francesco Maestrelli",flag:"🇮🇹",ranking:128,elo:1635,hard_elo:1605,clay_elo:1675,grass_elo:1585,hold:74,break:23,returnPct:35,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Filip Misolic",flag:"🇦🇹",ranking:129,elo:1632,hard_elo:1647,clay_elo:1622,grass_elo:1627,hold:75,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Shintaro Mochizuki",flag:"🇯🇵",ranking:130,elo:1628,hard_elo:1628,clay_elo:1648,grass_elo:1618,hold:74,break:20,returnPct:31,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Dane Sweeny",flag:"🇦🇺",ranking:131,elo:1625,hard_elo:1640,clay_elo:1615,grass_elo:1620,hold:76,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jack Pinnington Jones",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:132,elo:1622,hard_elo:1637,clay_elo:1612,grass_elo:1617,hold:75,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Vilius Gaubas",flag:"🇱🇹",ranking:133,elo:1618,hard_elo:1618,clay_elo:1638,grass_elo:1608,hold:73,break:20,returnPct:31,tiebreak:48,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Otto Virtanen",flag:"🇫🇮",ranking:134,elo:1615,hard_elo:1630,clay_elo:1605,grass_elo:1610,hold:76,break:20,returnPct:31,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Tomas Barrios Vera",flag:"🇨🇱",ranking:135,elo:1612,hard_elo:1582,clay_elo:1652,grass_elo:1562,hold:73,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Dusan Lajovic",flag:"🇷🇸",ranking:136,elo:1808,hard_elo:1778,clay_elo:1848,grass_elo:1758,hold:75,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Stefano Travaglia",flag:"🇮🇹",ranking:137,elo:1608,hard_elo:1623,clay_elo:1598,grass_elo:1603,hold:76,break:21,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Moez Echargui",flag:"🇹🇳",ranking:138,elo:1605,hard_elo:1605,clay_elo:1625,grass_elo:1595,hold:74,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Hugo Dellien",flag:"🇧🇴",ranking:139,elo:1802,hard_elo:1772,clay_elo:1842,grass_elo:1752,hold:74,break:23,returnPct:34,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Arthur Gea",flag:"🇫🇷",ranking:140,elo:1598,hard_elo:1613,clay_elo:1588,grass_elo:1593,hold:75,break:21,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Pedro Martinez",flag:"🇪🇸",ranking:141,elo:1798,hard_elo:1768,clay_elo:1838,grass_elo:1748,hold:74,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Roman Safiullin",flag:"🇷🇺",ranking:142,elo:1835,hard_elo:1850,clay_elo:1825,grass_elo:1830,hold:78,break:23,returnPct:34,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Elmer Moller",flag:"🇩🇰",ranking:143,elo:1595,hard_elo:1610,clay_elo:1585,grass_elo:1590,hold:75,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lloyd Harris",flag:"🇿🇦",ranking:144,elo:1792,hard_elo:1812,clay_elo:1742,grass_elo:1822,hold:82,break:20,returnPct:30,tiebreak:57,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Carlos Taberner",flag:"🇪🇸",ranking:145,elo:1788,hard_elo:1758,clay_elo:1828,grass_elo:1738,hold:74,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Michael Zheng",flag:"🇺🇸",ranking:146,elo:1588,hard_elo:1603,clay_elo:1578,grass_elo:1583,hold:76,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kyrian Jacquet",flag:"🇫🇷",ranking:147,elo:1585,hard_elo:1555,clay_elo:1625,grass_elo:1535,hold:73,break:22,returnPct:34,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Jordan Thompson",flag:"🇦🇺",ranking:148,elo:1782,hard_elo:1797,clay_elo:1772,grass_elo:1777,hold:77,break:22,returnPct:34,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Billy Harris",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:149,elo:1778,hard_elo:1798,clay_elo:1728,grass_elo:1808,hold:79,break:20,returnPct:30,tiebreak:53,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Facundo Diaz Acosta",flag:"🇦🇷",ranking:150,elo:1775,hard_elo:1745,clay_elo:1815,grass_elo:1725,hold:74,break:24,returnPct:36,tiebreak:48,handedness:"Left",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+];
+/* ══════════════════════════════════════════════════════════════
+   WTA DATABASE — Top 150 players
+══════════════════════════════════════════════════════════════ */
+const WTA_PLAYERS = [
+  {name:"Aryna Sabalenka",flag:"🇧🇾",ranking:1,elo:2118,hard_elo:2148,clay_elo:2062,grass_elo:2052,hold:78,break:36,returnPct:48,tiebreak:64,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","W","W"],rest:2,duration:88,h2h:{"Iga Swiatek":7,"Coco Gauff":8,"Elena Rybakina":7}},
+  {name:"Elena Rybakina",flag:"🇰🇿",ranking:2,elo:2068,hard_elo:2082,clay_elo:1972,grass_elo:2088,hold:80,break:30,returnPct:42,tiebreak:65,handedness:"Right",archetype:"Big Server",form:["W","W","W","L","W"],rest:1,duration:92},
+  {name:"Iga Swiatek",flag:"🇵🇱",ranking:3,elo:2098,hard_elo:2068,clay_elo:2152,grass_elo:2002,hold:77,break:38,returnPct:50,tiebreak:58,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","W"],rest:2,duration:95,h2h:{"Aryna Sabalenka":6,"Coco Gauff":10,"Elena Rybakina":9}},
+  {name:"Coco Gauff",flag:"🇺🇸",ranking:4,elo:2058,hard_elo:2072,clay_elo:2022,grass_elo:2002,hold:76,break:35,returnPct:47,tiebreak:60,handedness:"Right",archetype:"Complete All-Courter",form:["W","L","W","W","W"],rest:1,duration:102,h2h:{"Aryna Sabalenka":5,"Iga Swiatek":3,"Elena Rybakina":4}},
+  {name:"Jessica Pegula",flag:"🇺🇸",ranking:5,elo:2032,hard_elo:2052,clay_elo:1982,grass_elo:1972,hold:74,break:33,returnPct:45,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:2,duration:108},
+  {name:"Amanda Anisimova",flag:"🇺🇸",ranking:6,elo:2005,hard_elo:2015,clay_elo:1988,grass_elo:1985,hold:75,break:32,returnPct:44,tiebreak:57,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:1,duration:98},
+  {name:"Elina Svitolina",flag:"🇺🇦",ranking:7,elo:1985,hard_elo:1988,clay_elo:1978,grass_elo:1995,hold:72,break:30,returnPct:43,tiebreak:52,handedness:"Right",archetype:"Defensive Retriever",form:["W","L","W","W","W"],rest:2,duration:118},
+  {name:"Mirra Andreeva",flag:"🇷🇺",ranking:8,elo:1998,hard_elo:2005,clay_elo:2008,grass_elo:1958,hold:73,break:32,returnPct:44,tiebreak:54,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","W"],rest:1,duration:100},
+  {name:"Victoria Mboko",flag:"🇨🇦",ranking:9,elo:1968,hard_elo:1975,clay_elo:1948,grass_elo:1952,hold:73,break:30,returnPct:43,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:2,duration:95},
+  {name:"Karolina Muchova",flag:"🇨🇿",ranking:10,elo:1975,hard_elo:1962,clay_elo:1982,grass_elo:1982,hold:73,break:31,returnPct:44,tiebreak:56,handedness:"Right",archetype:"Creative All-Courter",form:["W","L","W","W","W"],rest:1,duration:112},
+  {name:"Belinda Bencic",flag:"🇨🇭",ranking:11,elo:1962,hard_elo:1968,clay_elo:1945,grass_elo:1962,hold:74,break:29,returnPct:42,tiebreak:55,handedness:"Right",archetype:"Complete All-Courter",form:["W","W","L","W","W"],rest:2,duration:105},
+  {name:"Linda Noskova",flag:"🇨🇿",ranking:12,elo:1955,hard_elo:1965,clay_elo:1935,grass_elo:1948,hold:75,break:28,returnPct:40,tiebreak:56,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","W","W"],rest:1,duration:98},
+  {name:"Jasmine Paolini",flag:"🇮🇹",ranking:13,elo:1985,hard_elo:1975,clay_elo:2015,grass_elo:2005,hold:72,break:33,returnPct:46,tiebreak:52,handedness:"Right",archetype:"Defensive Retriever",form:["W","L","W","W","W"],rest:2,duration:115},
+  {name:"Ekaterina Alexandrova",flag:"🇷🇺",ranking:14,elo:1935,hard_elo:1952,clay_elo:1902,grass_elo:1922,hold:75,break:26,returnPct:38,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:102},
+  {name:"Marta Kostyuk",flag:"🇺🇦",ranking:15,elo:1928,hard_elo:1938,clay_elo:1918,grass_elo:1905,hold:72,break:28,returnPct:41,tiebreak:51,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:112},
+  {name:"Naomi Osaka",flag:"🇯🇵",ranking:16,elo:1952,hard_elo:1975,clay_elo:1912,grass_elo:1932,hold:76,break:28,returnPct:40,tiebreak:58,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:3,duration:100},
+  {name:"Iva Jovic",flag:"🇺🇸",ranking:17,elo:1922,hard_elo:1935,clay_elo:1905,grass_elo:1902,hold:74,break:27,returnPct:39,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:1,duration:95},
+  {name:"Sorana Cirstea",flag:"🇷🇴",ranking:18,elo:1915,hard_elo:1922,clay_elo:1908,grass_elo:1905,hold:71,break:28,returnPct:40,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:2,duration:105},
+  {name:"Madison Keys",flag:"🇺🇸",ranking:19,elo:1945,hard_elo:1960,clay_elo:1888,grass_elo:1918,hold:77,break:28,returnPct:40,tiebreak:61,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:1,duration:92},
+  {name:"Liudmila Samsonova",flag:"🇷🇺",ranking:20,elo:1918,hard_elo:1935,clay_elo:1888,grass_elo:1905,hold:76,break:27,returnPct:39,tiebreak:56,handedness:"Right",archetype:"Big Server",form:["W","L","W","W","L"],rest:2,duration:98},
+  {name:"Clara Tauson",flag:"🇩🇰",ranking:21,elo:1908,hard_elo:1922,clay_elo:1882,grass_elo:1905,hold:73,break:27,returnPct:39,tiebreak:54,handedness:"Left",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Anna Kalinskaya",flag:"🇷🇺",ranking:22,elo:1902,hard_elo:1915,clay_elo:1875,grass_elo:1892,hold:74,break:28,returnPct:40,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:108},
+  {name:"Elise Mertens",flag:"🇧🇪",ranking:23,elo:1895,hard_elo:1902,clay_elo:1882,grass_elo:1878,hold:72,break:27,returnPct:40,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","W","W"],rest:1,duration:110},
+  {name:"Leylah Fernandez",flag:"🇨🇦",ranking:24,elo:1888,hard_elo:1882,clay_elo:1895,grass_elo:1872,hold:71,break:29,returnPct:42,tiebreak:50,handedness:"Left",archetype:"Counter-Puncher",form:["W","W","L","W","W"],rest:2,duration:112},
+  {name:"Diana Shnaider",flag:"🇷🇺",ranking:25,elo:1882,hard_elo:1892,clay_elo:1862,grass_elo:1852,hold:75,break:27,returnPct:39,tiebreak:56,handedness:"Left",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:1,duration:92},
+  {name:"Hailey Baptiste",flag:"🇺🇸",ranking:26,elo:1875,hard_elo:1885,clay_elo:1858,grass_elo:1858,hold:70,break:25,returnPct:37,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:2,duration:98},
+  {name:"Marie Bouzkova",flag:"🇨🇿",ranking:27,elo:1865,hard_elo:1868,clay_elo:1862,grass_elo:1848,hold:71,break:27,returnPct:39,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","W"],rest:1,duration:108},
+  {name:"Anastasia Potapova",flag:"🇷🇺",ranking:28,elo:1868,hard_elo:1878,clay_elo:1848,grass_elo:1848,hold:73,break:27,returnPct:39,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","L","W"],rest:2,duration:95},
+  {name:"Jelena Ostapenko",flag:"🇱🇻",ranking:29,elo:1872,hard_elo:1875,clay_elo:1862,grass_elo:1878,hold:72,break:28,returnPct:40,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","W","W"],rest:2,duration:100},
+  {name:"Ann Li",flag:"🇺🇸",ranking:30,elo:1858,hard_elo:1865,clay_elo:1848,grass_elo:1842,hold:71,break:27,returnPct:39,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["W","L","W","W","W"],rest:1,duration:108},
+  {name:"Aryna Sabalenka",flag:"🇧🇾",ranking:1,elo:2118,hard_elo:2130,clay_elo:2110,grass_elo:2113,hold:78,break:36,returnPct:48,tiebreak:64,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","W","W"],rest:2,duration:95},
+  {name:"Elena Rybakina",flag:"🇰🇿",ranking:2,elo:2068,hard_elo:2088,clay_elo:2028,grass_elo:2093,hold:80,break:30,returnPct:42,tiebreak:65,handedness:"Right",archetype:"Big Server",form:["W","W","W","W","W"],rest:2,duration:95},
+  {name:"Iga Swiatek",flag:"🇵🇱",ranking:3,elo:2098,hard_elo:2073,clay_elo:2133,grass_elo:2058,hold:77,break:38,returnPct:50,tiebreak:58,handedness:"Right",archetype:"Clay Specialist",form:["W","W","W","W","W"],rest:2,duration:95},
+  {name:"Coco Gauff",flag:"🇺🇸",ranking:4,elo:2058,hard_elo:2066,clay_elo:2066,grass_elo:2070,hold:76,break:35,returnPct:47,tiebreak:60,handedness:"Right",archetype:"Complete All-Courter",form:["W","W","W","W","W"],rest:2,duration:95},
+  {name:"Jessica Pegula",flag:"🇺🇸",ranking:5,elo:2032,hard_elo:2044,clay_elo:2024,grass_elo:2027,hold:74,break:33,returnPct:45,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","W","W","W"],rest:2,duration:95},
+  {name:"Amanda Anisimova",flag:"🇺🇸",ranking:6,elo:2005,hard_elo:2017,clay_elo:1997,grass_elo:2000,hold:75,break:32,returnPct:44,tiebreak:57,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:2,duration:95},
+  {name:"Elina Svitolina",flag:"🇺🇦",ranking:7,elo:1985,hard_elo:1990,clay_elo:1990,grass_elo:1990,hold:72,break:30,returnPct:43,tiebreak:52,handedness:"Right",archetype:"Defensive Retriever",form:["W","W","L","W","W"],rest:2,duration:95},
+  {name:"Mirra Andreeva",flag:"🇷🇺",ranking:8,elo:1998,hard_elo:1998,clay_elo:2016,grass_elo:1990,hold:73,break:32,returnPct:44,tiebreak:54,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","W"],rest:2,duration:95},
+  {name:"Victoria Mboko",flag:"🇨🇦",ranking:9,elo:1968,hard_elo:1980,clay_elo:1960,grass_elo:1963,hold:73,break:30,returnPct:43,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:2,duration:95},
+  {name:"Karolina Muchova",flag:"🇨🇿",ranking:10,elo:1975,hard_elo:1983,clay_elo:1983,grass_elo:1987,hold:73,break:31,returnPct:44,tiebreak:56,handedness:"Right",archetype:"Creative All-Courter",form:["W","W","L","W","W"],rest:2,duration:95},
+  {name:"Belinda Bencic",flag:"🇨🇭",ranking:11,elo:1962,hard_elo:1970,clay_elo:1970,grass_elo:1974,hold:74,break:29,returnPct:42,tiebreak:55,handedness:"Right",archetype:"Complete All-Courter",form:["W","W","L","W","W"],rest:1,duration:100},
+  {name:"Linda Noskova",flag:"🇨🇿",ranking:12,elo:1955,hard_elo:1967,clay_elo:1947,grass_elo:1950,hold:75,break:28,returnPct:40,tiebreak:56,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:1,duration:100},
+  {name:"Jasmine Paolini",flag:"🇮🇹",ranking:13,elo:1985,hard_elo:1990,clay_elo:1990,grass_elo:1990,hold:72,break:33,returnPct:46,tiebreak:52,handedness:"Right",archetype:"Defensive Retriever",form:["W","W","L","W","W"],rest:1,duration:100},
+  {name:"Ekaterina Alexandrova",flag:"🇷🇺",ranking:14,elo:1935,hard_elo:1947,clay_elo:1927,grass_elo:1930,hold:75,break:26,returnPct:38,tiebreak:55,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","W"],rest:1,duration:100},
+  {name:"Marta Kostyuk",flag:"🇺🇦",ranking:15,elo:1928,hard_elo:1928,clay_elo:1946,grass_elo:1920,hold:72,break:28,returnPct:41,tiebreak:51,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","W"],rest:1,duration:100},
+  {name:"Naomi Osaka",flag:"🇯🇵",ranking:16,elo:1952,hard_elo:1964,clay_elo:1944,grass_elo:1947,hold:76,break:28,returnPct:40,tiebreak:58,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Iva Jovic",flag:"🇺🇸",ranking:17,elo:1922,hard_elo:1934,clay_elo:1914,grass_elo:1917,hold:74,break:27,returnPct:39,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Sorana Cirstea",flag:"🇷🇴",ranking:18,elo:1915,hard_elo:1927,clay_elo:1907,grass_elo:1910,hold:71,break:28,returnPct:40,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Madison Keys",flag:"🇺🇸",ranking:19,elo:1945,hard_elo:1957,clay_elo:1937,grass_elo:1940,hold:77,break:28,returnPct:40,tiebreak:61,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Liudmila Samsonova",flag:"🇷🇺",ranking:20,elo:1918,hard_elo:1938,clay_elo:1878,grass_elo:1943,hold:76,break:27,returnPct:39,tiebreak:56,handedness:"Right",archetype:"Big Server",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Clara Tauson",flag:"🇩🇰",ranking:21,elo:1908,hard_elo:1920,clay_elo:1900,grass_elo:1903,hold:73,break:27,returnPct:39,tiebreak:54,handedness:"Left",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Anna Kalinskaya",flag:"🇷🇺",ranking:22,elo:1902,hard_elo:1914,clay_elo:1894,grass_elo:1897,hold:74,break:28,returnPct:40,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Elise Mertens",flag:"🇧🇪",ranking:23,elo:1895,hard_elo:1907,clay_elo:1887,grass_elo:1890,hold:72,break:27,returnPct:40,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Leylah Fernandez",flag:"🇨🇦",ranking:24,elo:1888,hard_elo:1888,clay_elo:1906,grass_elo:1880,hold:71,break:29,returnPct:42,tiebreak:50,handedness:"Left",archetype:"Counter-Puncher",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Diana Shnaider",flag:"🇷🇺",ranking:25,elo:1882,hard_elo:1894,clay_elo:1874,grass_elo:1877,hold:75,break:27,returnPct:39,tiebreak:56,handedness:"Left",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Hailey Baptiste",flag:"🇺🇸",ranking:26,elo:1875,hard_elo:1887,clay_elo:1867,grass_elo:1870,hold:70,break:25,returnPct:37,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Marie Bouzkova",flag:"🇨🇿",ranking:27,elo:1865,hard_elo:1865,clay_elo:1883,grass_elo:1857,hold:71,break:27,returnPct:39,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Anastasia Potapova",flag:"🇷🇺",ranking:28,elo:1868,hard_elo:1880,clay_elo:1860,grass_elo:1863,hold:73,break:27,returnPct:39,tiebreak:53,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Jelena Ostapenko",flag:"🇱🇻",ranking:29,elo:1872,hard_elo:1884,clay_elo:1864,grass_elo:1867,hold:72,break:28,returnPct:40,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Ann Li",flag:"🇺🇸",ranking:30,elo:1858,hard_elo:1858,clay_elo:1876,grass_elo:1850,hold:71,break:27,returnPct:39,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["W","L","W","W","W"],rest:1,duration:100},
+  {name:"Cristina Bucsa",flag:"🇪🇸",ranking:31,elo:1852,hard_elo:1827,clay_elo:1887,grass_elo:1812,hold:70,break:27,returnPct:39,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Xinyu Wang",flag:"🇨🇳",ranking:32,elo:1848,hard_elo:1860,clay_elo:1840,grass_elo:1843,hold:72,break:27,returnPct:39,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Jaqueline Cristian",flag:"🇷🇴",ranking:33,elo:1845,hard_elo:1857,clay_elo:1837,grass_elo:1840,hold:71,break:26,returnPct:38,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Maya Joint",flag:"🇦🇺",ranking:34,elo:1842,hard_elo:1854,clay_elo:1834,grass_elo:1837,hold:72,break:26,returnPct:38,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Sara Bejlek",flag:"🇨🇿",ranking:35,elo:1838,hard_elo:1850,clay_elo:1830,grass_elo:1833,hold:72,break:26,returnPct:38,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Katerina Siniakova",flag:"🇨🇿",ranking:36,elo:1835,hard_elo:1843,clay_elo:1843,grass_elo:1847,hold:71,break:27,returnPct:40,tiebreak:51,handedness:"Right",archetype:"Creative All-Courter",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Emma Raducanu",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:37,elo:1875,hard_elo:1883,clay_elo:1883,grass_elo:1887,hold:73,break:27,returnPct:40,tiebreak:54,handedness:"Right",archetype:"Complete All-Courter",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Alexandra Eala",flag:"🇵🇭",ranking:38,elo:1828,hard_elo:1840,clay_elo:1820,grass_elo:1823,hold:72,break:26,returnPct:38,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Emma Navarro",flag:"🇺🇸",ranking:39,elo:1925,hard_elo:1937,clay_elo:1917,grass_elo:1920,hold:73,break:28,returnPct:41,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Elisabetta Cocciaretto",flag:"🇮🇹",ranking:40,elo:1822,hard_elo:1834,clay_elo:1814,grass_elo:1817,hold:71,break:26,returnPct:38,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Janice Tjen",flag:"🇮🇩",ranking:41,elo:1818,hard_elo:1818,clay_elo:1836,grass_elo:1810,hold:70,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Barbora Krejcikova",flag:"🇨🇿",ranking:42,elo:1958,hard_elo:1966,clay_elo:1966,grass_elo:1970,hold:72,break:28,returnPct:41,tiebreak:52,handedness:"Right",archetype:"Creative All-Courter",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Tereza Valentova",flag:"🇨🇿",ranking:43,elo:1812,hard_elo:1824,clay_elo:1804,grass_elo:1807,hold:71,break:25,returnPct:37,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Marketa Vondrousova",flag:"🇨🇿",ranking:44,elo:1932,hard_elo:1940,clay_elo:1940,grass_elo:1944,hold:71,break:29,returnPct:42,tiebreak:51,handedness:"Left",archetype:"Creative All-Courter",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Dayana Yastremska",flag:"🇺🇦",ranking:45,elo:1858,hard_elo:1870,clay_elo:1850,grass_elo:1853,hold:73,break:26,returnPct:38,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Laura Siegemund",flag:"🇩🇪",ranking:46,elo:1845,hard_elo:1845,clay_elo:1863,grass_elo:1837,hold:70,break:26,returnPct:38,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"McCartney Kessler",flag:"🇺🇸",ranking:47,elo:1838,hard_elo:1850,clay_elo:1830,grass_elo:1833,hold:72,break:25,returnPct:37,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Maria Sakkari",flag:"🇬🇷",ranking:48,elo:1918,hard_elo:1930,clay_elo:1910,grass_elo:1913,hold:74,break:27,returnPct:40,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Magdalena Frech",flag:"🇵🇱",ranking:49,elo:1832,hard_elo:1832,clay_elo:1850,grass_elo:1824,hold:70,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Lois Boisson",flag:"🇫🇷",ranking:50,elo:1828,hard_elo:1840,clay_elo:1820,grass_elo:1823,hold:70,break:25,returnPct:37,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Jessica Bouzas Maneiro",flag:"🇪🇸",ranking:51,elo:1825,hard_elo:1800,clay_elo:1860,grass_elo:1785,hold:70,break:26,returnPct:38,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Tatjana Maria",flag:"🇩🇪",ranking:52,elo:1818,hard_elo:1833,clay_elo:1798,grass_elo:1843,hold:70,break:24,returnPct:36,tiebreak:51,handedness:"Right",archetype:"Serve-Volley Hybrid",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Qinwen Zheng",flag:"🇨🇳",ranking:53,elo:1912,hard_elo:1924,clay_elo:1904,grass_elo:1907,hold:74,break:27,returnPct:40,tiebreak:54,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Yuliia Starodubtseva",flag:"🇺🇦",ranking:54,elo:1815,hard_elo:1827,clay_elo:1807,grass_elo:1810,hold:70,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Talia Gibson",flag:"🇦🇺",ranking:55,elo:1808,hard_elo:1808,clay_elo:1826,grass_elo:1800,hold:70,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Caty McNally",flag:"🇺🇸",ranking:56,elo:1805,hard_elo:1805,clay_elo:1823,grass_elo:1797,hold:70,break:25,returnPct:38,tiebreak:50,handedness:"Left",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Magda Linette",flag:"🇵🇱",ranking:57,elo:1802,hard_elo:1802,clay_elo:1820,grass_elo:1794,hold:70,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Anna Bondar",flag:"🇭🇺",ranking:58,elo:1798,hard_elo:1773,clay_elo:1833,grass_elo:1758,hold:69,break:24,returnPct:36,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Zeynep Sonmez",flag:"🎾",ranking:59,elo:1795,hard_elo:1795,clay_elo:1813,grass_elo:1787,hold:70,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Sonay Kartal",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:60,elo:1792,hard_elo:1804,clay_elo:1784,grass_elo:1787,hold:71,break:24,returnPct:36,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["W","W","L","W","L"],rest:2,duration:105},
+  {name:"Antonia Ruzic",flag:"🇭🇷",ranking:61,elo:1788,hard_elo:1800,clay_elo:1780,grass_elo:1783,hold:70,break:24,returnPct:36,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Daria Kasatkina",flag:"🇦🇺",ranking:62,elo:1955,hard_elo:1930,clay_elo:1990,grass_elo:1915,hold:71,break:28,returnPct:42,tiebreak:50,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Elsa Jacquemot",flag:"🇫🇷",ranking:63,elo:1782,hard_elo:1757,clay_elo:1817,grass_elo:1742,hold:70,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Solana Sierra",flag:"🇦🇷",ranking:64,elo:1778,hard_elo:1753,clay_elo:1813,grass_elo:1738,hold:70,break:25,returnPct:37,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Nikola Bartunkova",flag:"🇨🇿",ranking:65,elo:1775,hard_elo:1787,clay_elo:1767,grass_elo:1770,hold:71,break:24,returnPct:36,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Oleksandra Oliynykova",flag:"🇺🇦",ranking:66,elo:1772,hard_elo:1784,clay_elo:1764,grass_elo:1767,hold:70,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Varvara Gracheva",flag:"🇫🇷",ranking:67,elo:1768,hard_elo:1768,clay_elo:1786,grass_elo:1760,hold:70,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Panna Udvardy",flag:"🇭🇺",ranking:68,elo:1765,hard_elo:1765,clay_elo:1783,grass_elo:1757,hold:69,break:23,returnPct:35,tiebreak:48,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Katie Boulter",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:69,elo:1762,hard_elo:1774,clay_elo:1754,grass_elo:1757,hold:71,break:23,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Donna Vekic",flag:"🇭🇷",ranking:70,elo:1918,hard_elo:1930,clay_elo:1910,grass_elo:1913,hold:75,break:26,returnPct:39,tiebreak:57,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Renata Zarazua",flag:"🇲🇽",ranking:71,elo:1758,hard_elo:1733,clay_elo:1793,grass_elo:1718,hold:68,break:24,returnPct:36,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Taylor Townsend",flag:"🇺🇸",ranking:72,elo:1755,hard_elo:1770,clay_elo:1735,grass_elo:1780,hold:71,break:24,returnPct:36,tiebreak:52,handedness:"Right",archetype:"Serve-Volley Hybrid",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Shuai Zhang",flag:"🇨🇳",ranking:73,elo:1752,hard_elo:1752,clay_elo:1770,grass_elo:1744,hold:70,break:23,returnPct:35,tiebreak:50,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Yulia Putintseva",flag:"🇰🇿",ranking:74,elo:1878,hard_elo:1883,clay_elo:1883,grass_elo:1883,hold:69,break:27,returnPct:40,tiebreak:48,handedness:"Right",archetype:"Defensive Retriever",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Elena-Gabriela Ruse",flag:"🇷🇴",ranking:75,elo:1748,hard_elo:1760,clay_elo:1740,grass_elo:1743,hold:70,break:23,returnPct:35,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Petra Marcinko",flag:"🇭🇷",ranking:76,elo:1745,hard_elo:1745,clay_elo:1763,grass_elo:1737,hold:69,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Camila Osorio",flag:"🇨🇴",ranking:77,elo:1742,hard_elo:1717,clay_elo:1777,grass_elo:1702,hold:69,break:25,returnPct:37,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Beatriz Haddad Maia",flag:"🇧🇷",ranking:78,elo:1895,hard_elo:1870,clay_elo:1930,grass_elo:1855,hold:71,break:28,returnPct:40,tiebreak:50,handedness:"Left",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Anastasia Zakharova",flag:"🇷🇺",ranking:79,elo:1738,hard_elo:1738,clay_elo:1756,grass_elo:1730,hold:69,break:23,returnPct:35,tiebreak:48,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Alycia Parks",flag:"🇺🇸",ranking:80,elo:1735,hard_elo:1747,clay_elo:1727,grass_elo:1730,hold:71,break:23,returnPct:35,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Eva Lys",flag:"🇩🇪",ranking:81,elo:1732,hard_elo:1744,clay_elo:1724,grass_elo:1727,hold:70,break:23,returnPct:35,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Viktorija Golubic",flag:"🇨🇭",ranking:82,elo:1728,hard_elo:1740,clay_elo:1720,grass_elo:1723,hold:70,break:23,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kimberly Birrell",flag:"🇦🇺",ranking:83,elo:1725,hard_elo:1737,clay_elo:1717,grass_elo:1720,hold:70,break:23,returnPct:35,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Veronika Erjavec",flag:"🇸🇮",ranking:84,elo:1722,hard_elo:1734,clay_elo:1714,grass_elo:1717,hold:70,break:22,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kamilla Rakhimova",flag:"🇺🇿",ranking:85,elo:1718,hard_elo:1730,clay_elo:1710,grass_elo:1713,hold:71,break:23,returnPct:34,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Veronika Kudermetova",flag:"🇷🇺",ranking:86,elo:1862,hard_elo:1874,clay_elo:1854,grass_elo:1857,hold:72,break:25,returnPct:37,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Sofia Kenin",flag:"🇺🇸",ranking:87,elo:1858,hard_elo:1858,clay_elo:1876,grass_elo:1850,hold:71,break:25,returnPct:38,tiebreak:51,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Oksana Selekhmeteva",flag:"🇷🇺",ranking:88,elo:1708,hard_elo:1720,clay_elo:1700,grass_elo:1703,hold:70,break:22,returnPct:34,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Anhelina Kalinina",flag:"🇺🇦",ranking:89,elo:1705,hard_elo:1705,clay_elo:1723,grass_elo:1697,hold:69,break:24,returnPct:36,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Ajla Tomljanovic",flag:"🇦🇺",ranking:90,elo:1702,hard_elo:1714,clay_elo:1694,grass_elo:1697,hold:71,break:22,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lilli Tagger",flag:"🇦🇹",ranking:91,elo:1698,hard_elo:1710,clay_elo:1690,grass_elo:1693,hold:70,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Peyton Stearns",flag:"🇺🇸",ranking:92,elo:1852,hard_elo:1864,clay_elo:1844,grass_elo:1847,hold:71,break:23,returnPct:35,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Simona Waltert",flag:"🇨🇭",ranking:93,elo:1692,hard_elo:1704,clay_elo:1684,grass_elo:1687,hold:70,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Diane Parry",flag:"🇫🇷",ranking:94,elo:1688,hard_elo:1663,clay_elo:1723,grass_elo:1648,hold:69,break:23,returnPct:35,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Daria Snigur",flag:"🇺🇦",ranking:95,elo:1685,hard_elo:1697,clay_elo:1677,grass_elo:1680,hold:70,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Tamara Korpatsch",flag:"🇩🇪",ranking:96,elo:1682,hard_elo:1682,clay_elo:1700,grass_elo:1674,hold:69,break:22,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Ella Seidel",flag:"🇩🇪",ranking:97,elo:1678,hard_elo:1690,clay_elo:1670,grass_elo:1673,hold:69,break:22,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Emiliana Arango",flag:"🇨🇴",ranking:98,elo:1675,hard_elo:1650,clay_elo:1710,grass_elo:1635,hold:68,break:23,returnPct:34,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Anna Blinkova",flag:"🇷🇺",ranking:99,elo:1672,hard_elo:1684,clay_elo:1664,grass_elo:1667,hold:70,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lanlana Tararudee",flag:"🇹🇭",ranking:100,elo:1668,hard_elo:1673,clay_elo:1673,grass_elo:1673,hold:68,break:21,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Defensive Retriever",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Sinja Kraus",flag:"🇦🇹",ranking:101,elo:1665,hard_elo:1677,clay_elo:1657,grass_elo:1660,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Hanne Vandewinkel",flag:"🇧🇪",ranking:102,elo:1662,hard_elo:1674,clay_elo:1654,grass_elo:1657,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Paula Badosa",flag:"🇪🇸",ranking:103,elo:1848,hard_elo:1856,clay_elo:1856,grass_elo:1860,hold:74,break:28,returnPct:40,tiebreak:53,handedness:"Right",archetype:"Complete All-Courter",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Darja Vidmanova",flag:"🇨🇿",ranking:104,elo:1655,hard_elo:1655,clay_elo:1673,grass_elo:1647,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Francesca Jones",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",ranking:105,elo:1652,hard_elo:1657,clay_elo:1657,grass_elo:1657,hold:68,break:21,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Defensive Retriever",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Victoria Jimenez Kasintseva",flag:"🇦🇩",ranking:106,elo:1648,hard_elo:1623,clay_elo:1683,grass_elo:1608,hold:68,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Ashlyn Krueger",flag:"🇺🇸",ranking:107,elo:1645,hard_elo:1657,clay_elo:1637,grass_elo:1640,hold:70,break:22,returnPct:33,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Katie Volynets",flag:"🇺🇸",ranking:108,elo:1642,hard_elo:1654,clay_elo:1634,grass_elo:1637,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Karolina Pliskova",flag:"🇨🇿",ranking:109,elo:1905,hard_elo:1925,clay_elo:1865,grass_elo:1930,hold:77,break:23,returnPct:33,tiebreak:57,handedness:"Right",archetype:"Big Server",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Moyuka Uchijima",flag:"🇯🇵",ranking:110,elo:1635,hard_elo:1635,clay_elo:1653,grass_elo:1627,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lulu Sun",flag:"🇳🇿",ranking:111,elo:1632,hard_elo:1644,clay_elo:1624,grass_elo:1627,hold:70,break:22,returnPct:33,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Darja Semenistaja",flag:"🇱🇻",ranking:112,elo:1628,hard_elo:1640,clay_elo:1620,grass_elo:1623,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kaja Juvan",flag:"🇸🇮",ranking:113,elo:1625,hard_elo:1637,clay_elo:1617,grass_elo:1620,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Anastasia Pavlyuchenkova",flag:"🇷🇺",ranking:114,elo:1848,hard_elo:1860,clay_elo:1840,grass_elo:1843,hold:73,break:25,returnPct:38,tiebreak:52,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Dominika Salkova",flag:"🇨🇿",ranking:115,elo:1618,hard_elo:1618,clay_elo:1636,grass_elo:1610,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Maja Chwalinska",flag:"🇵🇱",ranking:116,elo:1615,hard_elo:1627,clay_elo:1607,grass_elo:1610,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Dalma Galfi",flag:"🇭🇺",ranking:117,elo:1848,hard_elo:1823,clay_elo:1883,grass_elo:1808,hold:68,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Yue Yuan",flag:"🇨🇳",ranking:118,elo:1608,hard_elo:1620,clay_elo:1600,grass_elo:1603,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Maria Timofeeva",flag:"🇺🇿",ranking:119,elo:1605,hard_elo:1617,clay_elo:1597,grass_elo:1600,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Alina Korneeva",flag:"🇷🇺",ranking:120,elo:1602,hard_elo:1614,clay_elo:1594,grass_elo:1597,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Rebecca Sramkova",flag:"🇸🇰",ranking:121,elo:1598,hard_elo:1598,clay_elo:1616,grass_elo:1590,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Alina Charaeva",flag:"🇷🇺",ranking:122,elo:1595,hard_elo:1607,clay_elo:1587,grass_elo:1590,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Julia Grabher",flag:"🇦🇹",ranking:123,elo:1592,hard_elo:1604,clay_elo:1584,grass_elo:1587,hold:70,break:21,returnPct:32,tiebreak:50,handedness:"Left",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Leolia Jeanjean",flag:"🇫🇷",ranking:124,elo:1588,hard_elo:1563,clay_elo:1623,grass_elo:1548,hold:69,break:22,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Polina Kudermetova",flag:"🇺🇿",ranking:125,elo:1585,hard_elo:1597,clay_elo:1577,grass_elo:1580,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Aliaksandra Sasnovich",flag:"🇧🇾",ranking:126,elo:1782,hard_elo:1782,clay_elo:1800,grass_elo:1774,hold:69,break:22,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kaitlin Quevedo",flag:"🇪🇸",ranking:127,elo:1578,hard_elo:1553,clay_elo:1613,grass_elo:1538,hold:68,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Taylah Preston",flag:"🇦🇺",ranking:128,elo:1575,hard_elo:1587,clay_elo:1567,grass_elo:1570,hold:69,break:21,returnPct:31,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Suzan Lamens",flag:"🇳🇱",ranking:129,elo:1572,hard_elo:1584,clay_elo:1564,grass_elo:1567,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Mayar Sherif",flag:"🇪🇬",ranking:130,elo:1568,hard_elo:1543,clay_elo:1603,grass_elo:1528,hold:68,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Himeno Sakatsume",flag:"🇯🇵",ranking:131,elo:1565,hard_elo:1565,clay_elo:1583,grass_elo:1557,hold:68,break:20,returnPct:31,tiebreak:48,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Rebeka Masarova",flag:"🇨🇭",ranking:132,elo:1562,hard_elo:1537,clay_elo:1597,grass_elo:1522,hold:69,break:22,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Marina Stakusic",flag:"🇨🇦",ranking:133,elo:1558,hard_elo:1570,clay_elo:1550,grass_elo:1553,hold:70,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Tamara Zidansek",flag:"🇸🇮",ranking:134,elo:1825,hard_elo:1800,clay_elo:1860,grass_elo:1785,hold:68,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Elvina Kalieva",flag:"🇺🇸",ranking:135,elo:1552,hard_elo:1564,clay_elo:1544,grass_elo:1547,hold:70,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Emerson Jones",flag:"🇦🇺",ranking:136,elo:1548,hard_elo:1560,clay_elo:1540,grass_elo:1543,hold:69,break:21,returnPct:32,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lin Zhu",flag:"🇨🇳",ranking:137,elo:1545,hard_elo:1545,clay_elo:1563,grass_elo:1537,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lisa Pigato",flag:"🇮🇹",ranking:138,elo:1542,hard_elo:1517,clay_elo:1577,grass_elo:1502,hold:69,break:22,returnPct:33,tiebreak:49,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Katarzyna Kawa",flag:"🇵🇱",ranking:139,elo:1538,hard_elo:1513,clay_elo:1573,grass_elo:1498,hold:68,break:21,returnPct:32,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Andrea Lazaro Garcia",flag:"🇪🇸",ranking:140,elo:1535,hard_elo:1510,clay_elo:1570,grass_elo:1495,hold:68,break:22,returnPct:33,tiebreak:48,handedness:"Right",archetype:"Clay Specialist",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Maddison Inglis",flag:"🇦🇺",ranking:141,elo:1532,hard_elo:1544,clay_elo:1524,grass_elo:1527,hold:69,break:21,returnPct:31,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Veronika Podrez",flag:"🇺🇦",ranking:142,elo:1528,hard_elo:1540,clay_elo:1520,grass_elo:1523,hold:69,break:20,returnPct:31,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Priscilla Hon",flag:"🇦🇺",ranking:143,elo:1525,hard_elo:1530,clay_elo:1530,grass_elo:1530,hold:68,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Defensive Retriever",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Sofia Costoulas",flag:"🇧🇪",ranking:144,elo:1522,hard_elo:1534,clay_elo:1514,grass_elo:1517,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Kayla Day",flag:"🇺🇸",ranking:145,elo:1518,hard_elo:1518,clay_elo:1536,grass_elo:1510,hold:68,break:21,returnPct:32,tiebreak:48,handedness:"Right",archetype:"Counter-Puncher",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Mary Stoiana",flag:"🇺🇸",ranking:146,elo:1515,hard_elo:1527,clay_elo:1507,grass_elo:1510,hold:69,break:20,returnPct:31,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Lola Radivojevic",flag:"🇷🇸",ranking:147,elo:1512,hard_elo:1524,clay_elo:1504,grass_elo:1507,hold:68,break:20,returnPct:31,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Xiyu Wang",flag:"🇨🇳",ranking:148,elo:1508,hard_elo:1520,clay_elo:1500,grass_elo:1503,hold:70,break:21,returnPct:31,tiebreak:50,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Arantxa Rus",flag:"🇳🇱",ranking:149,elo:1505,hard_elo:1517,clay_elo:1497,grass_elo:1500,hold:69,break:21,returnPct:32,tiebreak:49,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+  {name:"Linda Fruhvirtova",flag:"🇨🇿",ranking:150,elo:1502,hard_elo:1514,clay_elo:1494,grass_elo:1497,hold:70,break:21,returnPct:32,tiebreak:51,handedness:"Right",archetype:"Aggressive Baseliner",form:["L","W","W","L","W"],rest:1,duration:108},
+];
+/* ══════════════════════════════════════════════════════════════
+   APP STATE
+══════════════════════════════════════════════════════════════ */
+let currentTour = 'ATP';
+let selectedA = null;
+let selectedB = null;
+let focusIndexA = -1;
+let focusIndexB = -1;
+let currentSurface = 'hard';
+
+function getDB() { return currentTour === 'ATP' ? ATP_PLAYERS : WTA_PLAYERS; }
+
+function setTour(btn) {
+  document.querySelectorAll('.tour-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTour = btn.dataset.val;
+  clearPlayer('A');
+  clearPlayer('B');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SURFACE STRENGTH TAG
+══════════════════════════════════════════════════════════════ */
+function getSurfaceStrengthTag(p) {
+  const h = p.hard_elo, c = p.clay_elo, g = p.grass_elo;
+  const max = Math.max(h, c, g);
+  const spread = max - Math.min(h, c, g);
+  if (spread < 30) return { label: 'Balanced profile', cls: 'surface-balanced' };
+  if (max === h) return { label: 'Hard specialist', cls: 'surface-hard' };
+  if (max === c) return { label: 'Clay specialist', cls: 'surface-clay' };
+  return { label: 'Grass specialist', cls: 'surface-grass' };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AUTOCOMPLETE SEARCH
+   Searches: name, ranking (#N), archetype keywords, surface type
+══════════════════════════════════════════════════════════════ */
+function searchPlayers(query) {
+  const db = getDB();
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+
+  // Ranking search: #3 or "3"
+  const rankMatch = q.match(/^#?(\d+)$/);
+  if (rankMatch) {
+    const target = parseInt(rankMatch[1]);
+    return db.filter(p => p.ranking === target || String(p.ranking).startsWith(String(target))).slice(0, 10);
+  }
+
+  // Surface/archetype keywords
+  const surfKeywords = { hard: 'hard', clay: 'clay', grass: 'grass' };
+  for (const [key, surf] of Object.entries(surfKeywords)) {
+    if (q.includes(key)) {
+      const tag = surf.charAt(0).toUpperCase() + surf.slice(1) + ' specialist';
+      const archMatches = db.filter(p => p.archetype.toLowerCase().includes(key) ||
+        getSurfaceStrengthTag(p).label.toLowerCase().includes(key));
+      if (archMatches.length) return archMatches.slice(0, 10);
+    }
+  }
+
+  // Name / archetype search
+  return db.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.archetype.toLowerCase().includes(q) ||
+    p.flag.includes(q)
+  ).sort((a, b) => {
+    // Exact start of last name first
+    const aStart = a.name.toLowerCase().split(' ').some(w => w.startsWith(q));
+    const bStart = b.name.toLowerCase().split(' ').some(w => w.startsWith(q));
+    if (aStart && !bStart) return -1;
+    if (!aStart && bStart) return 1;
+    return a.ranking - b.ranking;
+  }).slice(0, 10);
+}
+
+function handleSearch(id, query) {
+  if (id === 'A') focusIndexA = -1; else focusIndexB = -1;
+  document.getElementById('clear' + id).classList.toggle('visible', query.length > 0);
+  document.getElementById('warn' + id).classList.remove('visible');
+
+  if (!query) { closeDropdown(id); return; }
+  const matches = searchPlayers(query);
+  renderDropdown(id, matches, query);
+}
+
+function highlightMatch(name, query) {
+  if (!query) return name;
+  const idx = name.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return name;
+  return name.slice(0, idx) + `<mark>${name.slice(idx, idx + query.length)}</mark>` + name.slice(idx + query.length);
+}
+
+function renderDropdown(id, matches, query) {
+  const dd = document.getElementById('dropdown' + id);
+  if (!matches.length) {
+    dd.innerHTML = `<div class="no-results">No players found for "${query}"</div>`;
+    dd.classList.add('open'); return;
+  }
+  const db = getDB();
+  dd.innerHTML = matches.map((p, i) => {
+    const surfTag = getSurfaceStrengthTag(p);
+    return `<div class="dropdown-item" data-idx="${i}"
+      onmousedown="selectPlayerByIndex('${id}',${db.indexOf(p)})">
+      <span class="item-flag">${p.flag}</span>
+      <span class="item-rank-badge">#${p.ranking}</span>
+      <div class="item-info">
+        <div class="item-name">${highlightMatch(p.name, query)}</div>
+        <div class="item-meta">Elo ${p.elo} · ${p.handedness}-handed · ${surfTag.label}</div>
+      </div>
+      <span class="item-arch">${p.archetype}</span>
+    </div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function openDropdown(id) {
+  const q = document.getElementById('search' + id).value;
+  if (q.length > 0) handleSearch(id, q);
+}
+
+function closeDropdown(id) {
+  document.getElementById('dropdown' + id).classList.remove('open');
+}
+
+function handleKey(e, id) {
+  const dd = document.getElementById('dropdown' + id);
+  const items = dd.querySelectorAll('.dropdown-item');
+  let fi = id === 'A' ? focusIndexA : focusIndexB;
+
+  if (e.key === 'ArrowDown') { e.preventDefault(); fi = Math.min(fi + 1, items.length - 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); fi = Math.max(fi - 1, 0); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (fi >= 0 && items[fi]) items[fi].dispatchEvent(new MouseEvent('mousedown')); return; }
+  else if (e.key === 'Escape') { closeDropdown(id); return; }
+
+  if (id === 'A') focusIndexA = fi; else focusIndexB = fi;
+  items.forEach((el, i) => {
+    el.classList.toggle('focused', i === fi);
+    if (i === fi) el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function selectPlayerByIndex(id, dbIndex) {
+  const p = getDB()[dbIndex];
+
+  // Prevent same player
+  const other = id === 'A' ? selectedB : selectedA;
+  if (other && other.name === p.name) {
+    document.getElementById('warn' + id).classList.add('visible');
+    closeDropdown(id);
+    return;
+  }
+  document.getElementById('warn' + id).classList.remove('visible');
+
+  if (id === 'A') selectedA = p; else selectedB = p;
+
+  // Update search input
+  const inp = document.getElementById('search' + id);
+  inp.value = p.name;
+  inp.classList.add('selected');
+  document.getElementById('clear' + id).classList.add('visible');
+  closeDropdown(id);
+
+  // Update player card
+  const surfTag = getSurfaceStrengthTag(p);
+  const spc = document.getElementById('spc' + id);
+  document.getElementById('spc' + id + '_flag').textContent = p.flag;
+  document.getElementById('spc' + id + '_name').textContent = p.name;
+  document.getElementById('spc' + id + '_rank').textContent = `#${p.ranking}`;
+  document.getElementById('spc' + id + '_arch').textContent = p.archetype;
+  document.getElementById('spc' + id + '_hand').textContent = p.handedness + '-handed';
+  const surfEl = document.getElementById('spc' + id + '_surf');
+  surfEl.textContent = surfTag.label;
+  surfEl.className = `spc-tag ${surfTag.cls}`;
+  spc.classList.add('visible');
+
+  // Populate ALL fields
+  const pr = id.toLowerCase();
+  const setNum = (field, val) => { const el = document.getElementById(pr + '_' + field); if (el && val !== undefined) el.value = val; };
+  setNum('elo', p.elo); setNum('rank', p.ranking);
+  setNum('hard_elo', p.hard_elo); setNum('clay_elo', p.clay_elo); setNum('grass_elo', p.grass_elo);
+  setNum('rest', p.rest); setNum('duration', p.duration);
+
+  // Stat tiles — update display, hidden input, and edit field
+  setStatTile(pr, 'hold',   p.hold,      100, pr + '_hold_val');
+  setStatTile(pr, 'break',  p.break,     65,  pr + '_break_val');
+  setStatTile(pr, 'return', p.returnPct, 75,  pr + '_return_val');
+  setStatTile(pr, 'tb',     p.tiebreak,  90,  pr + '_tb_val');
+
+  // Form buttons
+  const formRow = document.getElementById(pr + '_form');
+  formRow.querySelectorAll('.form-btn').forEach((btn, i) => {
+    const r = p.form[i] || 'W';
+    btn.dataset.v = r; btn.textContent = r;
+    btn.className = 'form-btn ' + (r === 'W' ? 'win' : 'loss');
+  });
+
+  // Update H2H labels and auto-fill from player data when either player changes
+}
+
+function clearPlayer(id) {
+  if (id === 'A') selectedA = null; else selectedB = null;
+  const inp = document.getElementById('search' + id);
+  inp.value = ''; inp.classList.remove('selected');
+  document.getElementById('clear' + id).classList.remove('visible');
+  document.getElementById('spc' + id).classList.remove('visible');
+  document.getElementById('warn' + id).classList.remove('visible');
+  closeDropdown(id);
+  // Reset stat tiles
+  const pr = id.toLowerCase();
+  ['hold','break','return','tb'].forEach(field => {
+    const disp = document.getElementById(`${pr}_${field}_disp`);
+    const bar  = document.getElementById(`${pr}_${field}_bar`);
+    if (disp) { disp.textContent = '—'; disp.classList.remove('populated'); }
+    if (bar)  bar.style.width = '0%';
+  });
+}
+
+/* ── STAT TILE HELPERS ── */
+function setStatTile(pr, field, val, max, _unused) {
+  // Write to hidden input (used by model)
+  const hidden = document.getElementById(pr + '_' + field);
+  if (hidden) hidden.value = val;
+
+  // Update tile display
+  const disp = document.getElementById(`${pr}_${field}_disp`);
+  const bar  = document.getElementById(`${pr}_${field}_bar`);
+  if (disp) {
+    disp.textContent = val + '%';
+    disp.classList.add('populated');
+  }
+  if (bar) {
+    // Small delay so CSS transition fires
+    setTimeout(() => { bar.style.width = Math.min(100, (val / max) * 100) + '%'; }, 30);
+  }
+
+  // Sync edit field if open
+  const editEl = document.getElementById(`${pr}_${field}_edit`);
+  if (editEl) editEl.value = val;
+}
+
+function toggleEditStats(pr, open) {
+  const row = document.getElementById(pr + '_edit_row');
+  if (row) row.classList.toggle('open', open);
+}
+
+function syncStatEdit(pr, field, val) {
+  const v = parseInt(val) || 0;
+  // Write hidden input
+  const hidden = document.getElementById(pr + '_' + field);
+  if (hidden) hidden.value = v;
+  // Update tile display
+  const maxMap = { hold:100, break:65, return:75, tb:90 };
+  const disp = document.getElementById(`${pr}_${field}_disp`);
+  const bar  = document.getElementById(`${pr}_${field}_bar`);
+  if (disp) { disp.textContent = v + '%'; disp.classList.add('populated'); }
+  if (bar)  bar.style.width = Math.min(100, (v / (maxMap[field] || 100)) * 100) + '%';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.player-search-wrap')) { closeDropdown('A'); closeDropdown('B'); }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+function setToggle(groupId, btn) {
+  document.querySelectorAll(`#${groupId} .toggle-btn`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (groupId === 'surfaceToggle') currentSurface = btn.dataset.val;
+}
+function toggleForm(btn) {
+  if (btn.dataset.v === 'W') { btn.dataset.v='L'; btn.textContent='L'; btn.className='form-btn loss'; }
+  else { btn.dataset.v='W'; btn.textContent='W'; btn.className='form-btn win'; }
+}
+function getToggleVal(id) { return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.val; }
+function getFormArray(pid) { return [...document.querySelectorAll(`#${pid}_form .form-btn`)].map(b => b.dataset.v); }
+function n(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ══════════════════════════════════════════════════════════════
+   CORE PREDICTION MODEL
+   Weighting: 40% Surface Elo · 20% Form · 15% Serve/Return
+              10% Overall Elo · 10% Ranking · 5% Fatigue
+   +H2H, BO5, Indoor adjustments
+══════════════════════════════════════════════════════════════ */
+function computeFormScore(formArr) {
+  // Recency-weighted: oldest=10% → newest=30%
+  const w = [0.1, 0.15, 0.2, 0.25, 0.3];
+  return formArr.reduce((s, r, i) => s + (r === 'W' ? 1 : 0) * w[i], 0);
+}
+
+function getSurfaceElo(p, surface) {
+  return surface === 'hard' ? p.hard_elo : surface === 'clay' ? p.clay_elo : p.grass_elo;
+}
+
+function eloWinProb(eA, eB) { return 1 / (1 + Math.pow(10, (eB - eA) / 400)); }
+
+function fatigueScore(rest, duration) {
+  return Math.min(rest / 4, 1) - Math.min(duration / 300, 1) * 0.5;
+}
+
+function serveReturnScore(hold, brk, ret, tb) {
+  return (hold/100)*0.35 + (brk/65)*0.30 + (ret/75)*0.25 + (tb/90)*0.10;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DETERMINISTIC MATCHUP PROFILE
+   All projection logic derives from a single computed profile.
+   No Math.random() anywhere in the engine.
+══════════════════════════════════════════════════════════════ */
+function buildMatchupProfile(pA, pB, surface) {
+  const surfEloA = getSurfaceElo(pA, surface);
+  const surfEloB = getSurfaceElo(pB, surface);
+  const eloDiff   = surfEloA - surfEloB;          // positive = A stronger
+  const eloGap    = Math.abs(eloDiff);             // 0–300+
+  const avgHold   = (pA.hold   + pB.hold)   / 2;  // 60–90
+  const avgBreak  = (pA.break  + pB.break)  / 2;  // 15–50
+  const avgRet    = (pA.ret    + pB.ret)    / 2;   // 25–65
+  const avgTb     = (pA.tb     + pB.tb)    / 2;   // 40–80
+
+  // Serve dominance: 0=returner court, 1=server court
+  // High hold + low break = serve-dominated
+  const serveDom  = Math.max(0, Math.min(1, (avgHold - 65) / 25));
+
+  // Tiebreak propensity: driven by high hold%, high tb%, grass surface
+  const surfTbBonus = surface === 'grass' ? 0.12 : surface === 'clay' ? -0.10 : 0;
+  const tbPropensity = Math.max(0, Math.min(1,
+    (avgTb - 45) / 40 * 0.6 + serveDom * 0.3 + surfTbBonus + 0.1
+  ));
+
+  // Break propensity: driven by high return%, low hold%, clay
+  const surfBreakBonus = surface === 'clay' ? 0.12 : surface === 'grass' ? -0.08 : 0;
+  const breakPropensity = Math.max(0, Math.min(1,
+    (avgRet - 30) / 35 * 0.5 + (1 - serveDom) * 0.35 + surfBreakBonus + 0.05
+  ));
+
+  // Dominance index: 0=coin flip, 1=total domination
+  // Scales non-linearly — gaps below 50 Elo are nearly noise
+  const dominanceIdx = Math.max(0, Math.min(1, (eloGap - 20) / 220));
+
+  // Closeness: complement of dominance, used to weight tiebreak/deciding-set scenarios
+  const closenessIdx = 1 - dominanceIdx;
+
+  return { eloDiff, eloGap, dominanceIdx, closenessIdx,
+           avgHold, avgBreak, avgRet, avgTb,
+           serveDom, tbPropensity, breakPropensity, surfEloA, surfEloB };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   WIN PROBABILITY MODEL
+   Weighted blend of surface Elo, overall Elo, form, serve/return,
+   ranking, fatigue. Deterministic for the same inputs.
+══════════════════════════════════════════════════════════════ */
+function runModel(pA, pB, config) {
+  const { surface, bo5, indoor } = config;
+
+  const profile  = buildMatchupProfile(pA, pB, surface);
+  const { surfEloA, surfEloB } = profile;
+
+  const pSurfElo    = eloWinProb(surfEloA, surfEloB);
+  const pOverallElo = eloWinProb(pA.elo, pB.elo);
+  const pRank       = eloWinProb(1100 - pA.rank * 2, 1100 - pB.rank * 2);
+
+  const fA = computeFormScore(pA.form), fB = computeFormScore(pB.form);
+  const pForm = (fA + fB) > 0 ? fA / (fA + fB) : 0.5;
+
+  const sA = serveReturnScore(pA.hold, pA.break, pA.ret, pA.tb);
+  const sB = serveReturnScore(pB.hold, pB.break, pB.ret, pB.tb);
+  const pServe = (sA + sB) > 0 ? sA / (sA + sB) : 0.5;
+
+  const fatA = fatigueScore(pA.rest, pA.duration);
+  const fatB = fatigueScore(pB.rest, pB.duration);
+  const pFat = Math.max(0, Math.min(1, 0.5 + (fatA - fatB) / 2 * 0.5));
+
+  let pA_win = pSurfElo*0.40 + pForm*0.20 + pServe*0.15 + pOverallElo*0.10 + pRank*0.10 + pFat*0.05;
+
+
+  // Indoor: big servers gain on hard/indoor
+  if (indoor) {
+    pA_win += (pA.hold / 100 - 0.70) * 0.04;
+    pA_win -= (pB.hold / 100 - 0.70) * 0.04;
+  }
+
+  // BO5: elite & in-form players hold edge over distance
+  if (bo5) {
+    if (pA.rank <= 10) pA_win += 0.02;
+    if (pB.rank <= 10) pA_win -= 0.02;
+    pA_win += (fA - fB) * 0.04;
+  }
+
+  pA_win = Math.max(0.05, Math.min(0.95, pA_win));
+
+  // Compute set score distributions using point-level model
+  const scores = bo5
+    ? calcBO5Scores(pA_win, pA, pB, profile)
+    : calcBO3Scores(pA_win, pA, pB, profile);
+
+  const topScore = [...scores].sort((a, b) => b.prob - a.prob)[0];
+
+  // Confidence: Elo gap, form stability, serve variance, fatigue uncertainty
+  const formStability = 1 - Math.abs(fA - fB) * 0.5; // 0–1 how close form is
+  const serveVariance = profile.tbPropensity;          // high tb = volatile
+  const fatigueDelta  = Math.abs(fatA - fatB);         // large delta = uncertain
+  const rawGap = Math.abs(pA_win - 0.5);
+  // Confidence degrades with high volatility
+  const volatilityPenalty = serveVariance * 0.08 + fatigueDelta * 0.06;
+  const adjGap = Math.max(0, rawGap - volatilityPenalty);
+  const confidence = adjGap > 0.17 ? 'High' : adjGap > 0.08 ? 'Medium' : 'Low';
+  const confClass  = adjGap > 0.17 ? 'conf-high' : adjGap > 0.08 ? 'conf-med' : 'conf-low';
+
+
+  const factors = buildFactors(pA, pB, surface, surfEloA, surfEloB, fA, fB, sA, sB, fatA, fatB, indoor, bo5, profile);
+  const styles  = buildStyles(pA, pB, pA_win, scores, bo5, profile, surface);
+
+  return {
+    probA: pA_win, probB: 1 - pA_win,
+    scores, topScore,
+    confidence, confClass, factors, styles,
+    srvA: sA, srvB: sB, formA: fA, formB: fB,
+    surfEloA, surfEloB, profile,
+    elo: { a: pA.elo, b: pB.elo }
+  };
+}
+
+
+function calcBO3Scores(pAwin, playerA, playerB, profile) {
+  const { tbPropensity, dominanceIdx } = profile;
+  const holdA = playerA.hold / 100, holdB = playerB.hold / 100;
+  // P(A holds own serve), P(B holds own serve)
+  // Adjusted by Elo gap: stronger player holds better
+  const eloBoost = (profile.eloDiff / 400) * 0.04;
+  const pHoldA = Math.max(0.45, Math.min(0.95, holdA + eloBoost));
+  const pHoldB = Math.max(0.45, Math.min(0.95, holdB - eloBoost));
+
+  // P(A wins a set) — inline analytical approximation
+  // Average game-win probability: hold own + break opponent, divided by 2
+  const pGame3 = Math.max(0.03, Math.min(0.97, (pHoldA + (1 - pHoldB)) / 2));
+  const pSetA = Math.max(0.03, Math.min(0.97,
+    Math.pow(pGame3, 6) / (Math.pow(pGame3, 6) + Math.pow(1 - pGame3, 6))
+  ));
+  const pSetB = 1 - pSetA;
+
+  // BO3 exact set outcome probabilities
+  const p20 = pSetA * pSetA;
+  const p02 = pSetB * pSetB;
+  const p21 = pSetA * pSetB * pSetA + pSetB * pSetA * pSetA; // A wins after split
+  const p12 = pSetB * pSetA * pSetB + pSetA * pSetB * pSetB; // B wins after split
+  // Normalise (point model already probabilities, but floating point)
+  const tot = p20 + p21 + p12 + p02;
+  return [
+    { label:'2–0', prob: p20/tot, winner:'A' },
+    { label:'2–1', prob: p21/tot, winner:'A' },
+    { label:'1–2', prob: p12/tot, winner:'B' },
+    { label:'0–2', prob: p02/tot, winner:'B' },
+  ];
+}
+
+function calcBO5Scores(pAwin, playerA, playerB, profile) {
+  const { tbPropensity } = profile;
+  const eloBoost = (profile.eloDiff / 400) * 0.04;
+  const pHoldA = Math.max(0.45, Math.min(0.95, playerA.hold/100 + eloBoost));
+  const pHoldB = Math.max(0.45, Math.min(0.95, playerB.hold/100 - eloBoost));
+
+  // P(A wins a set) — inline analytical approximation
+  const pGame5 = Math.max(0.03, Math.min(0.97, (pHoldA + (1 - pHoldB)) / 2));
+  const pA = Math.max(0.03, Math.min(0.97,
+    Math.pow(pGame5, 6) / (Math.pow(pGame5, 6) + Math.pow(1 - pGame5, 6))
+  ));
+  const pB = 1 - pA;
+
+  // Exact BO5 set outcome probabilities
+  const p30 = pA**3;
+  const p03 = pB**3;
+  const p31 = binom(3,1) * pA**3 * pB;
+  const p13 = binom(3,1) * pB**3 * pA;
+  const p32 = binom(4,2) * pA**3 * pB**2;
+  const p23 = binom(4,2) * pB**3 * pA**2;
+  const tot = p30+p31+p32+p23+p13+p03;
+  return [
+    { label:'3–0', prob: p30/tot, winner:'A' },
+    { label:'3–1', prob: p31/tot, winner:'A' },
+    { label:'3–2', prob: p32/tot, winner:'A' },
+    { label:'2–3', prob: p23/tot, winner:'B' },
+    { label:'1–3', prob: p13/tot, winner:'B' },
+    { label:'0–3', prob: p03/tot, winner:'B' },
+  ];
+}
+
+/* ──────────────────────────────────────────────
+   KEY FACTORS
+────────────────────────────────────────────── */
+function buildFactors(pA, pB, surface, seA, seB, fA, fB, sA, sB, fatA, fatB, indoor, bo5, profile) {
+  const factors = [];
+  const sName = surface.charAt(0).toUpperCase() + surface.slice(1);
+  const { dominanceIdx, tbPropensity, breakPropensity, serveDom } = profile;
+
+  // 1. Surface Elo gap
+  const eDiff = seA - seB;
+  if (Math.abs(eDiff) > 18) {
+    const who = eDiff > 0 ? 'A' : 'B';
+    const desc = Math.abs(eDiff) > 80 ? 'significant' : Math.abs(eDiff) > 40 ? 'clear' : 'slight';
+    factors.push({ icon: eDiff>0?'↑':'↓', positive: eDiff>0,
+      text: `<strong>Player ${who}</strong> holds a ${desc} +${Math.abs(Math.round(eDiff))} ${sName} Elo edge — historically the stronger performer on this surface` });
+  }
+
+  // 2. Form
+  const fDiff = fA - fB;
+  if (Math.abs(fDiff) > 0.07) {
+    const who = fDiff > 0 ? 'A' : 'B';
+    const adj = Math.abs(fDiff) > 0.2 ? 'significantly' : 'moderately';
+    factors.push({ icon: fDiff>0?'↑':'↓', positive: fDiff>0,
+      text: `<strong>Player ${who}</strong> arrives ${adj} in better form — recency-weighted W/L record favours them` });
+  }
+
+  // 3. Serve dominance analysis
+  const holdDiff = pA.hold - pB.hold;
+  if (Math.abs(holdDiff) > 4) {
+    const who = holdDiff > 0 ? 'A' : 'B';
+    factors.push({ icon: holdDiff>0?'↑':'↓', positive: holdDiff>0,
+      text: `<strong>Player ${who}</strong> holds serve at a meaningfully higher rate (${Math.max(pA.hold,pB.hold)}% vs ${Math.min(pA.hold,pB.hold)}%) — critical on ${sName}` });
+  }
+
+  // 4. Return game / break ability
+  const retDiff = pA.ret - pB.ret;
+  if (Math.abs(retDiff) > 4) {
+    const who = retDiff > 0 ? 'A' : 'B';
+    factors.push({ icon: retDiff>0?'↑':'↓', positive: retDiff>0,
+      text: `<strong>Player ${who}</strong> is the stronger returner (${Math.max(pA.ret,pB.ret)}% return win rate), creating more break opportunities` });
+  }
+
+  // 5. Surface matchup note
+  if (surface === 'clay' && breakPropensity > 0.5) {
+    factors.push({ icon: '🎾', positive: null,
+      text: `Clay conditions amplify return-game importance — high break propensity (${Math.round(breakPropensity*100)}%) expected in this matchup` });
+  } else if (surface === 'grass' && tbPropensity > 0.5) {
+    factors.push({ icon: '🌿', positive: null,
+      text: `Grass surface boosts serve dominance — tiebreak propensity is elevated (${Math.round(tbPropensity*100)}%); the bigger server has an added edge` });
+  } else if (surface === 'hard' && serveDom > 0.55) {
+    factors.push({ icon: '🏟️', positive: null,
+      text: `Hard court with high average hold% (${Math.round(profile.avgHold)}%) — expect serve-and-hold patterns with limited break chances` });
+  }
+
+  // 6. Tiebreak edge
+  const tbDiff = pA.tb - pB.tb;
+  if (tbPropensity > 0.45 && Math.abs(tbDiff) > 5) {
+    const who = tbDiff > 0 ? 'A' : 'B';
+    factors.push({ icon: tbDiff>0?'↑':'↓', positive: tbDiff>0,
+      text: `<strong>Player ${who}</strong> has the tiebreak edge (${Math.max(pA.tb,pB.tb)}% win rate) — significant given high tiebreak propensity in this matchup` });
+  }
+
+  // 7. Fatigue
+  const fatDiff = fatA - fatB;
+  if (Math.abs(fatDiff) > 0.10) {
+    const fatigued = fatDiff < 0 ? 'A' : 'B';
+    factors.push({ icon: '⚡', positive: fatDiff > 0,
+      text: `<strong>Player ${fatigued}</strong> is at a physical disadvantage — shorter rest period and/or a longer prior match increases fatigue risk` });
+  }
+
+  // 8. H2H
+
+  // 9. Format notes
+  if (indoor) factors.push({ icon: '🏟️', positive: null,
+    text: 'Indoor conditions remove wind and bounce variance — rewards consistent, flat-hitting servers' });
+  if (bo5) factors.push({ icon: '💪', positive: null,
+    text: 'Best-of-5 favours physical depth, serve reliability, and mental composure over a long match' });
+
+  if (!factors.length) factors.push({ icon: '⚖️', positive: null,
+    text: 'Inputs are closely matched across all analytical dimensions — model confidence is limited' });
+
+  return factors;
+}
+
+/* ──────────────────────────────────────────────
+   MATCH STYLE
+────────────────────────────────────────────── */
+function buildStyles(pA, pB, pAwin, scores, bo5, profile, surface) {
+  const tags = [];
+  const { avgHold, avgBreak, avgTb, tbPropensity, breakPropensity, serveDom, dominanceIdx, closenessIdx } = profile;
+
+  // Serve character
+  if (serveDom > 0.60) tags.push({ label: 'Serve-Dominated', highlight: true });
+  else if (breakPropensity > 0.55) tags.push({ label: 'Return-Heavy Matchup', highlight: true });
+
+  // Surface specific
+  if (surface === 'grass' && serveDom > 0.55) tags.push({ label: 'Fast-Court Serve Advantage', highlight: true });
+  if (surface === 'clay')  tags.push({ label: 'Baseline Grind Expected', highlight: false });
+
+  // Tiebreak
+  if (tbPropensity > 0.55) tags.push({ label: 'Tiebreak-Heavy Matchup', highlight: true });
+
+  // Closeness / upset
+  if (closenessIdx > 0.75) tags.push({ label: 'High Upset Potential', highlight: true });
+  if (dominanceIdx > 0.55) tags.push({ label: 'Clear Favourite', highlight: false });
+
+  // Match length
+  const deciderSc = bo5
+    ? scores.find(s => s.label==='3–2' || s.label==='2–3')
+    : scores.find(s => s.label==='2–1' || s.label==='1–2');
+  if (deciderSc && deciderSc.prob > 0.32) tags.push({ label: 'Long-Match Likelihood High', highlight: false });
+
+  // Break battle
+  if (avgBreak > 30 && avgHold < 76) tags.push({ label: 'Break-Fest Expected', highlight: true });
+
+  // Minimal breaks
+  if (avgHold > 81 && avgBreak < 21) tags.push({ label: 'Minimal Break Opportunities', highlight: false });
+
+  // Tiebreak edge
+  if (tbPropensity > 0.45) tags.push({ label: 'Nerve Test Likely', highlight: false });
+
+  return tags;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PREDICT ENTRY POINT
+══════════════════════════════════════════════════════════════ */
+function predict() {
+  const surface = getToggleVal('surfaceToggle');
+  const bo5 = getToggleVal('formatToggle') === '5';
+  const indoor = getToggleVal('envToggle') === 'indoor';
+
+  const readPlayer = (id) => ({
+    name: (id==='A'?selectedA:selectedB)?.name || document.getElementById('search'+id).value || 'Player '+id,
+    flag: (id==='A'?selectedA:selectedB)?.flag || '🎾',
+    elo: n(id.toLowerCase()+'_elo') || 1850, rank: n(id.toLowerCase()+'_rank') || 50,
+    hard_elo: n(id.toLowerCase()+'_hard_elo') || 1850,
+    clay_elo:  n(id.toLowerCase()+'_clay_elo')  || 1850,
+    grass_elo: n(id.toLowerCase()+'_grass_elo') || 1850,
+    hold:  n(id.toLowerCase()+'_hold'),
+    break: n(id.toLowerCase()+'_break'),
+    ret:   n(id.toLowerCase()+'_return'),
+    tb:    n(id.toLowerCase()+'_tb'),
+    rest:  n(id.toLowerCase()+'_rest'),
+    duration: n(id.toLowerCase()+'_duration'),
+    form: getFormArray(id.toLowerCase()),
+  });
+
+  const pA = readPlayer('A'), pB = readPlayer('B');
+  const result = runModel(pA, pB, { surface, bo5, indoor });
+  renderResults(pA, pB, result, surface, bo5);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER RESULTS
+══════════════════════════════════════════════════════════════ */
+function renderResults(pA, pB, result, surface, bo5) {
+  document.getElementById('emptyState').style.display = 'none';
+  const rc = document.getElementById('resultCards');
+  rc.style.display = 'flex';
+
+  const {probA, probB, scores, topScore, confidence, confClass,
+         factors, styles, srvA, srvB, formA, formB, surfEloA, surfEloB, profile} = result;
+  const winnerIsA = probA >= probB;
+  const winner = winnerIsA ? pA : pB;
+  const loser  = winnerIsA ? pB : pA;
+
+  // --- Win probability block ---
+  document.getElementById('res_a_flag').textContent = pA.flag;
+  document.getElementById('res_b_flag').textContent = pB.flag;
+  document.getElementById('res_a_name').textContent = pA.name;
+  document.getElementById('res_b_name').textContent = pB.name;
+  document.getElementById('res_a_elo').textContent = `Elo ${pA.elo} · #${pA.rank}`;
+  document.getElementById('res_b_elo').textContent = `Elo ${pB.elo} · #${pB.rank}`;
+  document.getElementById('res_a_prob').textContent = (probA*100).toFixed(1)+'%';
+  document.getElementById('res_b_prob').textContent = (probB*100).toFixed(1)+'%';
+  document.getElementById('res_winner').textContent = winner.name;
+  document.getElementById('res_winner').style.color = winnerIsA ? 'var(--player-a)' : 'var(--player-b)';
+  document.getElementById('block_a').classList.toggle('loser', !winnerIsA);
+  document.getElementById('block_b').classList.toggle('loser', winnerIsA);
+  setTimeout(() => { document.getElementById('prob_bar_a').style.width = (probA*100)+'%'; }, 50);
+  const confEl = document.getElementById('res_conf');
+  confEl.className = `confidence-pill ${confClass}`;
+  confEl.innerHTML = `<span class="conf-dot"></span><span>${confidence} Confidence</span>`;
+
+  // --- Set Score Grid ---
+  const topSc = [...scores].sort((a,b)=>b.prob-a.prob)[0];
+  document.getElementById('scoreGrid').innerHTML = scores.map(sc => {
+    const isWin = sc.winner==='A', isTop = sc.label===topSc.label;
+    return `<div class="score-card ${isTop?'top-pick':''} ${isWin?'winner-score':''}">
+      <div class="score-label" style="color:${isWin?'var(--player-a)':'var(--player-b)'}">${sc.label}</div>
+      <div class="score-prob">${(sc.prob*100).toFixed(1)}%</div>
+      <div class="score-prob-bar"><div class="score-prob-fill" data-w="${sc.prob*100}" style="width:0%"></div></div>
+    </div>`;
+  }).join('');
+  setTimeout(() => { document.querySelectorAll('.score-prob-fill').forEach(el => el.style.width = el.dataset.w+'%'); }, 80);
+
+  // --- Match Length Bars ---
+  const lb = document.getElementById('lengthBars');
+  const mkBars = items => {
+    const max = Math.max(...items.map(i => i.prob));
+    return items.map(b => `<div class="length-bar-wrap">
+      <div class="length-bar-pct">${(b.prob*100).toFixed(0)}%</div>
+      <div class="length-bar-fill ${b.prob===max?'dominant':''}" data-h="${(b.prob/max)*56}" style="height:2px"></div>
+      <div class="length-bar-label">${b.label}</div>
+    </div>`).join('');
+  };
+  if (bo5) {
+    const p3 = scores.filter(s=>s.label==='3–0'||s.label==='0–3').reduce((a,b)=>a+b.prob,0);
+    const p4 = scores.filter(s=>s.label==='3–1'||s.label==='1–3').reduce((a,b)=>a+b.prob,0);
+    const p5 = scores.filter(s=>s.label==='3–2'||s.label==='2–3').reduce((a,b)=>a+b.prob,0);
+    lb.innerHTML = mkBars([{label:'3 Sets',prob:p3},{label:'4 Sets',prob:p4},{label:'5 Sets',prob:p5}]);
+  } else {
+    const p2 = scores.filter(s=>s.label==='2–0'||s.label==='0–2').reduce((a,b)=>a+b.prob,0);
+    const p3 = scores.filter(s=>s.label==='2–1'||s.label==='1–2').reduce((a,b)=>a+b.prob,0);
+    lb.innerHTML = mkBars([{label:'2 Sets',prob:p2},{label:'3 Sets',prob:p3}]);
+  }
+  setTimeout(() => { document.querySelectorAll('.length-bar-fill').forEach(el => el.style.height = el.dataset.h+'px'); }, 80);
+
+  // --- Stats Compare ---
+  const statDefs = [
+    {label:'Hold %',    a:pA.hold,  b:pB.hold},
+    {label:'Break %',   a:pA.break, b:pB.break},
+    {label:'Return Win %', a:pA.ret, b:pB.ret},
+    {label:'Tiebreak %',a:pA.tb,    b:pB.tb},
+    {label:'Days Rest', a:pA.rest,  b:pB.rest},
+  ];
+  document.getElementById('statsCompare').innerHTML = statDefs.map(st => {
+    const tot = st.a + st.b || 1;
+    const pctA = (st.a / tot) * 100;
+    return `<div>
+      <div class="stat-header">
+        <span class="stat-name">${st.label}</span>
+        <div class="stat-vals"><span class="stat-val-a">${st.a}</span><span style="color:var(--muted)">·</span><span class="stat-val-b">${st.b}</span></div>
+      </div>
+      <div class="stat-dual-bar"><div class="stat-fill-a" data-w="${pctA}" style="width:0%"></div><div class="stat-fill-b"></div></div>
+    </div>`;
+  }).join('');
+  setTimeout(() => { document.querySelectorAll('.stat-fill-a').forEach(el => el.style.width = el.dataset.w+'%'); }, 100);
+
+  // --- Radar ---
+  drawRadar(pA, pB, formA, formB, surface);
+
+  // --- Factors ---
+  document.getElementById('factorsList').innerHTML = factors.map(f => {
+    const c = f.positive===null ? 'var(--muted2)' : (f.positive ? 'var(--accent)' : 'var(--danger)');
+    return `<div class="factor-row"><span class="factor-icon" style="color:${c}">${f.icon}</span><span class="factor-text">${f.text}</span></div>`;
+  }).join('');
+
+  // --- Style Tags ---
+  document.getElementById('styleTags').innerHTML = styles.map(t =>
+    `<div class="style-tag ${t.highlight?'highlight':''}">${t.label}</div>`
+  ).join('') || `<div class="style-tag">Balanced matchup</div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RADAR CHART — surface-aware Elo axis
+══════════════════════════════════════════════════════════════ */
+function drawRadar(pA, pB, formA, formB, surface) {
+  const canvas = document.getElementById('radarCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const cx = W/2, cy = H/2 + 8;
+  const r = Math.min(W, H) * 0.33;
+  const labels = ['Surface Elo','Form','Hold %','Break %','Return %','Tiebreak %'];
+  const n = labels.length;
+
+  function norm(v, lo, hi) { return Math.max(0, Math.min(1, (v-lo)/(hi-lo))); }
+
+  // Surface-specific Elo for radar axis
+  const seA = getSurfaceElo(pA, surface);
+  const seB = getSurfaceElo(pB, surface);
+  const eloMin = Math.min(seA, seB) - 80;
+  const eloMax = Math.max(seA, seB) + 80;
+
+  const dataA = [norm(seA,eloMin,eloMax), formA, norm(pA.hold,40,100), norm(pA.break,5,65), norm(pA.ret,15,75), norm(pA.tb,15,90)];
+  const dataB = [norm(seB,eloMin,eloMax), formB, norm(pB.hold,40,100), norm(pB.break,5,65), norm(pB.ret,15,75), norm(pB.tb,15,90)];
+
+  const getPoint = (i, val) => {
+    const angle = (Math.PI*2/n)*i - Math.PI/2;
+    return { x: cx + Math.cos(angle)*r*val, y: cy + Math.sin(angle)*r*val };
+  };
+
+  // Grid
+  for (let ring=1; ring<=4; ring++) {
+    ctx.beginPath();
+    for (let i=0; i<n; i++) {
+      const angle=(Math.PI*2/n)*i-Math.PI/2;
+      i===0 ? ctx.moveTo(cx+Math.cos(angle)*r*(ring/4), cy+Math.sin(angle)*r*(ring/4))
+             : ctx.lineTo(cx+Math.cos(angle)*r*(ring/4), cy+Math.sin(angle)*r*(ring/4));
+    }
+    ctx.closePath();
+    ctx.strokeStyle='rgba(255,255,255,0.055)'; ctx.lineWidth=1; ctx.stroke();
+  }
+  for (let i=0; i<n; i++) {
+    const a=(Math.PI*2/n)*i-Math.PI/2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    ctx.strokeStyle='rgba(255,255,255,0.055)'; ctx.stroke();
+  }
+
+  const drawPoly = (data, rgb, alpha) => {
+    ctx.beginPath();
+    data.forEach((v,i) => { const pt=getPoint(i,v); i===0?ctx.moveTo(pt.x,pt.y):ctx.lineTo(pt.x,pt.y); });
+    ctx.closePath();
+    ctx.fillStyle=`rgba(${rgb},${alpha})`; ctx.fill();
+    ctx.strokeStyle=`rgb(${rgb})`; ctx.lineWidth=1.8; ctx.stroke();
+    data.forEach((v,i) => {
+      const pt=getPoint(i,v);
+      ctx.beginPath(); ctx.arc(pt.x,pt.y,3,0,Math.PI*2);
+      ctx.fillStyle=`rgb(${rgb})`; ctx.fill();
+    });
+  };
+
+  drawPoly(dataA, '200,245,58', 0.12);
+  drawPoly(dataB, '58,184,245', 0.10);
+
+  // Surface label on radar
+  ctx.font = 'bold 9px DM Mono, monospace';
+  ctx.fillStyle = 'rgba(200,245,58,0.5)';
+  ctx.textAlign = 'center';
+  const surfLabel = surface.toUpperCase() + ' ELO';
+  ctx.fillText(surfLabel, cx, cy - r - 30);
+
+  ctx.font = '10px DM Sans, sans-serif';
+  ctx.fillStyle = '#5a6675';
+  for (let i=0; i<n; i++) {
+    const a=(Math.PI*2/n)*i-Math.PI/2;
+    ctx.fillText(labels[i], cx+Math.cos(a)*(r+24), cy+Math.sin(a)*(r+24)+4);
+  }
+
+  // Legend
+  const lx = cx - 55;
+  ctx.fillStyle='#c8f53a'; ctx.fillRect(lx, H-16, 8, 8);
+  ctx.fillStyle='#8a97a6'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='left';
+  ctx.fillText(pA.name.split(' ').at(-1), lx+11, H-8);
+  ctx.fillStyle='#3ab8f5'; ctx.fillRect(lx+90, H-16, 8, 8);
+  ctx.fillStyle='#8a97a6';
+  ctx.fillText(pB.name.split(' ').at(-1), lx+101, H-8);
+}
+</script>
+</body>
+</html>
